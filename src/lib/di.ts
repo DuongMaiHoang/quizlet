@@ -13,6 +13,8 @@
 
 import { ISetRepository } from '@/domain/repositories/ISetRepository';
 import { LocalStorageSetRepository } from '@/infrastructure/persistence/LocalStorageSetRepository';
+import { IFlashcardsProgressRepository } from '@/domain/repositories/IFlashcardsProgressRepository';
+import { LocalStorageFlashcardsProgressRepository } from '@/infrastructure/persistence/LocalStorageFlashcardsProgressRepository';
 
 // Use cases - Set
 import { CreateSet } from '@/application/use-cases/set/CreateSet';
@@ -30,6 +32,11 @@ import { DeleteCard } from '@/application/use-cases/card/DeleteCard';
 import { GenerateTest } from '@/application/use-cases/study/GenerateTest';
 import { SubmitAnswer } from '@/application/use-cases/study/SubmitAnswer';
 
+// Use cases - Flashcards
+import { LoadFlashcardsProgress } from '@/application/use-cases/flashcards/LoadFlashcardsProgress';
+import { SaveFlashcardsProgress } from '@/application/use-cases/flashcards/SaveFlashcardsProgress';
+import { ResetFlashcardsProgress } from '@/application/use-cases/flashcards/ResetFlashcardsProgress';
+
 /**
  * Container class
  * 
@@ -40,6 +47,7 @@ class DIContainer {
 
     // Repository instances
     private _setRepository: ISetRepository | null = null;
+    private _flashcardsProgressRepository: IFlashcardsProgressRepository | null = null;
 
     // Use case instances
     private _createSet: CreateSet | null = null;
@@ -52,6 +60,9 @@ class DIContainer {
     private _deleteCard: DeleteCard | null = null;
     private _generateTest: GenerateTest | null = null;
     private _submitAnswer: SubmitAnswer | null = null;
+    private _loadFlashcardsProgress: LoadFlashcardsProgress | null = null;
+    private _saveFlashcardsProgress: SaveFlashcardsProgress | null = null;
+    private _resetFlashcardsProgress: ResetFlashcardsProgress | null = null;
 
     private constructor() { }
 
@@ -70,6 +81,13 @@ class DIContainer {
             this._setRepository = new LocalStorageSetRepository();
         }
         return this._setRepository;
+    }
+
+    get flashcardsProgressRepository(): IFlashcardsProgressRepository {
+        if (!this._flashcardsProgressRepository) {
+            this._flashcardsProgressRepository = new LocalStorageFlashcardsProgressRepository();
+        }
+        return this._flashcardsProgressRepository;
     }
 
     // Use case getters - Set
@@ -143,6 +161,28 @@ class DIContainer {
             this._submitAnswer = new SubmitAnswer();
         }
         return this._submitAnswer;
+    }
+
+    // Use case getters - Flashcards
+    get loadFlashcardsProgress(): LoadFlashcardsProgress {
+        if (!this._loadFlashcardsProgress) {
+            this._loadFlashcardsProgress = new LoadFlashcardsProgress(this.flashcardsProgressRepository);
+        }
+        return this._loadFlashcardsProgress;
+    }
+
+    get saveFlashcardsProgress(): SaveFlashcardsProgress {
+        if (!this._saveFlashcardsProgress) {
+            this._saveFlashcardsProgress = new SaveFlashcardsProgress(this.flashcardsProgressRepository);
+        }
+        return this._saveFlashcardsProgress;
+    }
+
+    get resetFlashcardsProgress(): ResetFlashcardsProgress {
+        if (!this._resetFlashcardsProgress) {
+            this._resetFlashcardsProgress = new ResetFlashcardsProgress(this.flashcardsProgressRepository);
+        }
+        return this._resetFlashcardsProgress;
     }
 }
 

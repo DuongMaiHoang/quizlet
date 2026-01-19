@@ -1,155 +1,205 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { SetDTO, CardDTO } from '@/application/dto/SetDTO';
 import { container } from '@/lib/di';
 import { LoadingState } from '@/ui/components/common/LoadingState';
 import { ErrorState } from '@/ui/components/common/ErrorState';
-import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
+import { EmptyState } from '@/ui/components/common/EmptyState';
+import { Flashcard } from '@/ui/components/study/Flashcard';
+import { ProgressIndicator } from '@/ui/components/study/ProgressIndicator';
+import { ConfidenceButtons } from '@/ui/components/study/ConfidenceButtons';
+import { ResetProgressModal } from '@/ui/components/study/ResetProgressModal';
+import { useFlashcardsStore } from '@/ui/store/flashcardsStore';
+import { CardKey } from '@/domain/value-objects/CardKey';
+import { ChevronLeft, ChevronRight, Shuffle, RotateCcw, FileQuestion } from 'lucide-react';
 
 /**
  * Flashcards Study Mode Page
  * 
- * Review cards with flip animation
+ * Implements Quizlet-like flashcards with flip, navigation, shuffle, progress tracking.
+ * BR-FLIP-01..03, BR-NAV-01..04, BR-KNOW-01, BR-LEARN-01, BR-SET-01..02,
+ * BR-SHUFF-01..03, BR-RESET-01..03, BR-PERSIST-01..03, BR-PROG-01..03
  */
 export default function FlashcardsPage() {
     const params = useParams();
-    const router = useRouter();
     const setId = params.id as string;
 
     const [set, setSet] = useState<SetDTO | null>(null);
-    const [originalCards, setOriginalCards] = useState<CardDTO[]>([]); // BR-FC-05: Store original order
-    const [cards, setCards] = useState<CardDTO[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
-    const [isShuffled, setIsShuffled] = useState(false); // BR-FC-05: Toggle state
+    const [originalCardKeys, setOriginalCardKeys] = useState<string[]>([]);
+    const [cardMap, setCardMap] = useState<Map<string, CardDTO>>(new Map());
+    const [showResetModal, setShowResetModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadSet();
-    }, [setId]);
+    const {
+        progress,
+        cardOrder,
+        isLoading: progressLoading,
+        error: progressError,
+        loadProgress,
+        flip,
+        next,
+        prev,
+        markKnow,
+        markLearning,
+        toggleShuffle,
+        resetProgress,
+    } = useFlashcardsStore();
 
-    // Keyboard support (BR-FC-*)
+    // Load set and initialize progress
     useEffect(() => {
+        const initialize = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Load set
+                const getSet = container.getSet;
+                const result = await getSet.execute(setId);
+
+                if (!result) {
+                    setError('Set not found');
+                    return;
+                }
+
+                // BR-EMP-01: Handle empty set
+                if (result.cards.length === 0) {
+                    setSet(result);
+                    return;
+                }
+
+                setSet(result);
+
+                // Create card keys and map
+                const keys: string[] = [];
+                const map = new Map<string, CardDTO>();
+
+                result.cards.forEach((card, index) => {
+                    // Prefer card.id, fallback to setId::index
+                    const key = card.id 
+                        ? CardKey.fromCardId(card.id).toString()
+                        : CardKey.fromSetIdAndIndex(setId, index).toString();
+                    keys.push(key);
+                    map.set(key, card);
+                });
+
+                setOriginalCardKeys(keys);
+                setCardMap(map);
+
+                // Load progress
+                await loadProgress(setId, keys);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load set');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initialize();
+    }, [setId, loadProgress]);
+
+    // Keyboard shortcuts
+    // BR-FLIP-02, BR-NAV-01, BR-NAV-02, BR-KNOW-01, BR-LEARN-01, BR-SHUFF-01, BR-RESET-01
+    useEffect(() => {
+        if (loading || error || !progress || !set) return;
+
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (loading || error) return;
+            // Prevent default for shortcuts
+            if (['Space', 'ArrowLeft', 'ArrowRight', 'KeyK', 'KeyL', 'KeyS', 'KeyR'].includes(e.code)) {
+                e.preventDefault();
+            }
 
-            // Space to flip
+            // Space: flip
             if (e.code === 'Space') {
-                e.preventDefault(); // Prevent scroll
-                setIsFlipped((prev) => !prev);
+                flip();
             }
 
-            // Arrows to navigate
+            // ArrowRight: next
             if (e.code === 'ArrowRight') {
-                handleNext();
+                next();
             }
+
+            // ArrowLeft: prev
             if (e.code === 'ArrowLeft') {
-                handlePrevious();
+                prev();
+            }
+
+            // K: mark Know
+            if (e.code === 'KeyK') {
+                const currentCardKey = getCurrentCardKey();
+                if (currentCardKey) {
+                    markKnow(CardKey.fromString(currentCardKey));
+                }
+            }
+
+            // L: mark Learning
+            if (e.code === 'KeyL') {
+                const currentCardKey = getCurrentCardKey();
+                if (currentCardKey) {
+                    markLearning(CardKey.fromString(currentCardKey));
+                }
+            }
+
+            // S: toggle shuffle
+            if (e.code === 'KeyS') {
+                toggleShuffle(originalCardKeys);
+            }
+
+            // R: reset (open modal)
+            if (e.code === 'KeyR') {
+                setShowResetModal(true);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [loading, error, currentIndex, cards.length]); // Dependencies for closure stability
+    }, [loading, error, progress, set, flip, next, prev, markKnow, markLearning, toggleShuffle, originalCardKeys]);
 
-    const loadSet = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const getSet = container.getSet;
-            const result = await getSet.execute(setId);
+    const getCurrentCardKey = (): string | null => {
+        if (!progress || cardOrder.length === 0) return null;
+        return cardOrder[progress.index] || null;
+    };
 
-            if (!result) {
-                setError('Set not found');
-                return;
-            }
+    const getCurrentCard = (): CardDTO | null => {
+        const key = getCurrentCardKey();
+        if (!key) return null;
+        return cardMap.get(key) || null;
+    };
 
-            if (result.cards.length === 0) {
-                setError('This set has no cards to study');
-                return;
-            }
-
-            setSet(result);
-            setOriginalCards(result.cards); // Store original
-            setCards(result.cards);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load set');
-        } finally {
-            setLoading(false);
+    const handleMarkKnow = useCallback(() => {
+        const key = getCurrentCardKey();
+        if (key) {
+            markKnow(CardKey.fromString(key));
         }
-    };
+    }, [markKnow]);
 
-    const handleNext = () => {
-        // Need to use functional update or ref to get current state inside event listener if not using dependency array correctly.
-        // But since we put it in dependency array, simple check is fine.
-        // Actually, helper functions inside component are captured.
-        // Let's rely on the state available in render.
-        // Note: For useEffect closure, we need to call the functions or use refs.
-        // Simplified: I will define these inside the effect or make them stable?
-        // Let's keep them here but access current state via setState callbacks if needed,
-        // OR rely on the fact that useEffect depends on [currentIndex].
-        // To be safe for the keydown listener, I'll rely on the latest closure:
-
-        setCards((currentCards) => {
-            setCurrentIndex((prevIndex) => {
-                if (prevIndex < currentCards.length - 1) {
-                    setIsFlipped(false);
-                    return prevIndex + 1;
-                }
-                return prevIndex;
-            });
-            return currentCards;
-        });
-    };
-
-    const handlePrevious = () => {
-        setCards((currentCards) => {
-            setCurrentIndex((prevIndex) => {
-                if (prevIndex > 0) {
-                    setIsFlipped(false);
-                    return prevIndex - 1;
-                }
-                return prevIndex;
-            });
-            return currentCards;
-        });
-    };
-
-    const toggleShuffle = () => {
-        if (!isShuffled) {
-            // Turn ON: Shuffle in memory, reset index
-            const shuffled = [...originalCards].sort(() => Math.random() - 0.5);
-            setCards(shuffled);
-            setIsShuffled(true);
-        } else {
-            // Turn OFF: Restore original, reset index
-            setCards(originalCards);
-            setIsShuffled(false);
+    const handleMarkLearning = useCallback(() => {
+        const key = getCurrentCardKey();
+        if (key) {
+            markLearning(CardKey.fromString(key));
         }
-        setCurrentIndex(0);
-        setIsFlipped(false);
-    };
+    }, [markLearning]);
 
-    const handleReset = () => {
-        setCurrentIndex(0);
-        setIsFlipped(false);
-        // Requirement implies resetting navigation? 
-        // "Shuffle changes in-memory order only".
-        // Reset doesn't have a specific BR other than implicit UX.
-    };
+    const handleReset = useCallback(async () => {
+        await resetProgress(setId);
+        // Reload progress after reset
+        await loadProgress(setId, originalCardKeys);
+    }, [setId, resetProgress, loadProgress, originalCardKeys]);
 
-    if (loading) {
+    // Loading state
+    if (loading || progressLoading) {
         return <LoadingState />;
     }
 
-    if (error || !set) {
+    // Error state
+    if (error || progressError) {
         return (
             <ErrorState
-                message={error || 'Set not found'}
+                title="Set not found"
+                message={error || progressError || 'Set not found'}
                 action={
                     <Link
                         href={`/sets/${setId}`}
@@ -162,12 +212,46 @@ export default function FlashcardsPage() {
         );
     }
 
-    const currentCard = cards[currentIndex];
+    // Empty set
+    if (set && set.cards.length === 0) {
+        return (
+            <div className="mx-auto max-w-4xl">
+                <Link
+                    href={`/sets/${setId}`}
+                    className="mb-4 inline-flex items-center text-sm text-muted hover:text-foreground transition-colors"
+                >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    Back to set
+                </Link>
+                <EmptyState
+                    icon={FileQuestion}
+                    title="No cards yet"
+                    description="This set doesn't have any cards to study."
+                    actionLabel="Add cards"
+                    actionHref={`/sets/${setId}/edit`}
+                />
+            </div>
+        );
+    }
+
+    // Ready state
+    if (!set || !progress || cardOrder.length === 0) {
+        return <LoadingState />;
+    }
+
+    const currentCard = getCurrentCard();
+    if (!currentCard) {
+        return <ErrorState message="Card not found" />;
+    }
+
+    const currentCardKey = getCurrentCardKey();
+    const currentStatus = currentCardKey ? progress.getCardStatus(CardKey.fromString(currentCardKey)) : 'unset';
+    const stats = progress.getStats();
 
     return (
-        <div className="mx-auto max-w-4xl space-y-8">
+        <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <Link
                         href={`/sets/${setId}`}
@@ -176,23 +260,26 @@ export default function FlashcardsPage() {
                         <ChevronLeft className="mr-1 h-4 w-4" />
                         Back to set
                     </Link>
-                    <h1 className="text-3xl font-bold text-foreground">{set.title}</h1>
+                    <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{set.title}</h1>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2">
                     <button
-                        onClick={toggleShuffle}
-                        className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${isShuffled
+                        onClick={() => toggleShuffle(originalCardKeys)}
+                        className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                            progress.order === 'shuffled'
                                 ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
                                 : 'border-border text-foreground hover:bg-card-hover'
-                            }`}
+                        }`}
+                        aria-label="Toggle shuffle"
                     >
                         <Shuffle className="mr-2 h-4 w-4" />
-                        {isShuffled ? 'Shuffled' : 'Shuffle'}
+                        {progress.order === 'shuffled' ? 'Shuffled' : 'Shuffle'}
                     </button>
                     <button
-                        onClick={handleReset}
+                        onClick={() => setShowResetModal(true)}
                         className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                        aria-label="Reset progress"
                     >
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Reset
@@ -200,90 +287,60 @@ export default function FlashcardsPage() {
                 </div>
             </div>
 
-            {/* Progress */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted">
-                        Card {currentIndex + 1} of {cards.length}
-                    </span>
-                    <span className="text-muted">
-                        {Math.round(((currentIndex + 1) / cards.length) * 100)}% complete
-                    </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-card">
-                    <div
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
-                    />
-                </div>
-            </div>
+            {/* Progress Indicator */}
+            <ProgressIndicator
+                currentIndex={progress.index}
+                total={cardOrder.length}
+                knownCount={stats.known}
+                learningCount={stats.learning}
+            />
 
             {/* Flashcard */}
             <div className="relative">
-                <div
-                    className="group relative h-96 cursor-pointer"
-                    onClick={() => setIsFlipped(!isFlipped)}
-                >
-                    <div
-                        className={`absolute inset-0 transition-all duration-500 ${isFlipped ? '[transform:rotateY(180deg)]' : ''
-                            }`}
-                        style={{ transformStyle: 'preserve-3d' }}
-                    >
-                        {/* Front (Term) */}
-                        <div
-                            className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-border bg-card p-8 text-center shadow-xl"
-                            style={{ backfaceVisibility: 'hidden' }}
-                        >
-                            <div className="mb-4 text-sm font-medium uppercase text-muted">
-                                Term
-                            </div>
-                            <div className="text-3xl font-bold text-foreground">
-                                {currentCard.term}
-                            </div>
-                            <div className="mt-8 text-sm text-muted">
-                                Click to flip or Press Space
-                            </div>
-                        </div>
-
-                        {/* Back (Definition) */}
-                        <div
-                            className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-primary bg-card p-8 text-center shadow-xl [transform:rotateY(180deg)]"
-                            style={{ backfaceVisibility: 'hidden' }}
-                        >
-                            <div className="mb-4 text-sm font-medium uppercase text-muted">
-                                Definition
-                            </div>
-                            <div className="text-2xl font-semibold text-foreground">
-                                {currentCard.definition}
-                            </div>
-                            <div className="mt-8 text-sm text-muted">
-                                Click to flip back or Press Space
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <Flashcard
+                    term={currentCard.term}
+                    definition={currentCard.definition}
+                    side={progress.side}
+                    onFlip={flip}
+                />
             </div>
 
             {/* Navigation */}
             <div className="flex items-center justify-between">
                 <button
-                    onClick={() => handlePrevious()}
-                    disabled={currentIndex === 0}
+                    onClick={prev}
+                    disabled={progress.index === 0}
                     className="inline-flex items-center rounded-lg bg-card-hover px-6 py-3 text-sm font-medium text-foreground hover:bg-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Previous card"
                 >
                     <ChevronLeft className="mr-2 h-5 w-5" />
                     Previous
                 </button>
 
                 <button
-                    onClick={() => handleNext()}
-                    disabled={currentIndex === cards.length - 1}
+                    onClick={next}
+                    disabled={progress.index >= cardOrder.length - 1}
                     className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Next card"
                 >
                     Next
                     <ChevronRight className="ml-2 h-5 w-5" />
                 </button>
             </div>
+
+            {/* Confidence Buttons */}
+            <ConfidenceButtons
+                currentStatus={currentStatus}
+                onMarkKnow={handleMarkKnow}
+                onMarkLearning={handleMarkLearning}
+            />
+
+            {/* Reset Modal */}
+            <ResetProgressModal
+                isOpen={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

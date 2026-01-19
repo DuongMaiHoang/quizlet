@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -31,6 +33,7 @@
     "@vitest/ui": "^4.0.17",
     "eslint": "^9",
     "eslint-config-next": "16.1.2",
+    "@playwright/test": "^1.57.0",
     "jsdom": "^27.4.0",
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
