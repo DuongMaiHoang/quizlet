@@ -121,7 +121,7 @@ export default function SetDetailPage() {
             {/* Study Modes */}
             <div className="grid gap-4 md:grid-cols-3">
                 <Link
-                    href={`/sets/${setId}/study/flashcards`}
+                    href={`/study/${setId}/flashcards`}
                     className="group rounded-xl border border-border bg-card p-6 transition-all hover:border-primary hover:bg-card-hover hover:shadow-lg"
                 >
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">

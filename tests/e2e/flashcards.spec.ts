@@ -60,7 +60,8 @@ test.describe('Flashcards Study Mode', () => {
     ]);
   });
 
-  test('T-FC-01: Load happy path', async ({ page }) => {
+  test('T-FC-01: Load happy path (canonical route)', async ({ page }) => {
+    // Use canonical route /study/:setId/flashcards
     await page.goto(`/study/${setId}/flashcards`);
     
     // Wait for page to load
@@ -295,5 +296,68 @@ test.describe('Flashcards Study Mode', () => {
     // Space flips card
     await page.keyboard.press('Space');
     await expect(page.locator('text=Definition 1')).toBeVisible();
+  });
+
+  test('T-FC-12: Auto-advance after marking Know', async ({ page }) => {
+    await page.goto(`/study/${setId}/flashcards`);
+    await page.waitForSelector('text=Term 1');
+    
+    // Mark card 1 as Know
+    await page.click('button:has-text("Know")');
+    
+    // Wait for auto-advance (300ms + some buffer)
+    await page.waitForTimeout(500);
+    
+    // Should have advanced to card 2
+    await expect(page.locator('text=Card 2 of 3')).toBeVisible();
+    await expect(page.locator('text=Term 2')).toBeVisible();
+    
+    // Card 1 should still be marked Know (persisted)
+    // Navigate back to verify
+    await page.click('button:has-text("Previous")');
+    await expect(page.locator('text=Card 1 of 3')).toBeVisible();
+    await expect(page.locator('button:has-text("Know")')).toHaveClass(/border-success|bg-success/);
+  });
+
+  test('T-FC-13: Auto-advance after marking Still learning', async ({ page }) => {
+    await page.goto(`/study/${setId}/flashcards`);
+    await page.waitForSelector('text=Term 1');
+    
+    // Mark card 1 as Still learning
+    await page.click('button:has-text("Still learning")');
+    
+    // Wait for auto-advance
+    await page.waitForTimeout(500);
+    
+    // Should have advanced to card 2
+    await expect(page.locator('text=Card 2 of 3')).toBeVisible();
+  });
+
+  test('T-FC-14: No auto-advance on last card', async ({ page }) => {
+    await page.goto(`/study/${setId}/flashcards`);
+    await page.waitForSelector('text=Term 1');
+    
+    // Navigate to last card
+    await page.click('button:has-text("Next")');
+    await page.waitForSelector('text=Card 2 of 3');
+    await page.click('button:has-text("Next")');
+    await page.waitForSelector('text=Card 3 of 3');
+    
+    // Mark last card as Know
+    await page.click('button:has-text("Know")');
+    
+    // Wait longer than auto-advance delay
+    await page.waitForTimeout(500);
+    
+    // Should still be on card 3 (no advance)
+    await expect(page.locator('text=Card 3 of 3')).toBeVisible();
+    await expect(page.locator('text=Term 3')).toBeVisible();
+  });
+
+  test('T-FC-15: Backward compatibility - old route still works', async ({ page }) => {
+    // Test that old route /sets/:id/study/flashcards still works
+    await page.goto(`/sets/${setId}/study/flashcards`);
+    await page.waitForSelector('text=Card 1 of 3');
+    await expect(page.locator('text=Term 1')).toBeVisible();
   });
 });

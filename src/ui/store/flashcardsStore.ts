@@ -21,6 +21,9 @@ interface FlashcardsStoreState {
     isLoading: boolean;
     error: string | null;
     
+    // Configuration
+    autoAdvanceEnabled: boolean; // BR-AUTO-ADV-01: Configurable auto-advance (default ON)
+    
     // Actions
     loadProgress: (setId: string, originalCardKeys: string[]) => Promise<void>;
     flip: () => Promise<void>;
@@ -62,6 +65,7 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
     cardOrder: [],
     isLoading: false,
     error: null,
+    autoAdvanceEnabled: true, // BR-AUTO-ADV-01: Default ON
 
     /**
      * Load progress for a set
@@ -152,13 +156,14 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
 
     /**
      * Mark card as Know
-     * BR-KNOW-01
+     * BR-KNOW-01, BR-AUTO-ADV-01
      */
     markKnow: async (cardKey: CardKey) => {
-        const { progress } = get();
+        const { progress, cardOrder, autoAdvanceEnabled } = get();
         if (!progress) return;
         
         const currentStatus = progress.getCardStatus(cardKey);
+        const isLastCard = progress.index >= cardOrder.length - 1;
         
         // BR-SET-02: Allow unset by clicking active state again
         if (currentStatus === 'know') {
@@ -167,19 +172,33 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
             progress.markKnow(cardKey);
         }
         
+        // BR-PERSIST-01: Save immediately (don't delay)
         await container.saveFlashcardsProgress.execute(progress);
         set({ progress });
+        
+        // BR-AUTO-ADV-01: Auto-advance after 250-400ms if enabled and not last card
+        if (autoAdvanceEnabled && !isLastCard) {
+            setTimeout(async () => {
+                const { progress: currentProgress, cardOrder: currentOrder } = get();
+                if (currentProgress && currentProgress.index < currentOrder.length - 1) {
+                    currentProgress.setIndex(currentProgress.index + 1);
+                    await container.saveFlashcardsProgress.execute(currentProgress);
+                    set({ progress: currentProgress });
+                }
+            }, 300); // 300ms delay (within 250-400ms range)
+        }
     },
 
     /**
      * Mark card as Still learning
-     * BR-LEARN-01
+     * BR-LEARN-01, BR-AUTO-ADV-01
      */
     markLearning: async (cardKey: CardKey) => {
-        const { progress } = get();
+        const { progress, cardOrder, autoAdvanceEnabled } = get();
         if (!progress) return;
         
         const currentStatus = progress.getCardStatus(cardKey);
+        const isLastCard = progress.index >= cardOrder.length - 1;
         
         // BR-SET-02: Allow unset by clicking active state again
         if (currentStatus === 'learning') {
@@ -188,8 +207,21 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
             progress.markLearning(cardKey);
         }
         
+        // BR-PERSIST-01: Save immediately (don't delay)
         await container.saveFlashcardsProgress.execute(progress);
         set({ progress });
+        
+        // BR-AUTO-ADV-01: Auto-advance after 250-400ms if enabled and not last card
+        if (autoAdvanceEnabled && !isLastCard) {
+            setTimeout(async () => {
+                const { progress: currentProgress, cardOrder: currentOrder } = get();
+                if (currentProgress && currentProgress.index < currentOrder.length - 1) {
+                    currentProgress.setIndex(currentProgress.index + 1);
+                    await container.saveFlashcardsProgress.execute(currentProgress);
+                    set({ progress: currentProgress });
+                }
+            }, 300); // 300ms delay (within 250-400ms range)
+        }
     },
 
     /**

@@ -55,7 +55,7 @@ export function SetCard({ set, onDelete }: SetCardProps) {
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <Link
-                        href={`/sets/${set.id}/study/flashcards`}
+                        href={`/study/${set.id}/flashcards`}
                         className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
                     >
                         Study
