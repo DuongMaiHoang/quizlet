@@ -28,16 +28,12 @@ export function ProgressIndicator({
                     Card {currentIndex + 1} of {total}
                 </span>
                 <div className="flex items-center gap-4">
-                    {knownCount > 0 && (
-                        <span className="text-muted">
-                            <span className="font-medium text-success">{knownCount}</span> Know
-                        </span>
-                    )}
-                    {learningCount > 0 && (
-                        <span className="text-muted">
-                            <span className="font-medium text-warning">{learningCount}</span> Learning
-                        </span>
-                    )}
+                    <span className="text-muted">
+                        <span className="font-medium text-success">{knownCount}</span> Known
+                    </span>
+                    <span className="text-muted">
+                        <span className="font-medium text-warning">{learningCount}</span> Learning
+                    </span>
                 </div>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-card">

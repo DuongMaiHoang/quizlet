@@ -166,7 +166,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
         const isLastCard = progress.index >= cardOrder.length - 1;
         
         // BR-SET-02: Allow unset by clicking active state again
-        if (currentStatus === 'know') {
+        const wasUnset = currentStatus === 'know';
+        if (wasUnset) {
             progress.unsetCard(cardKey);
         } else {
             progress.markKnow(cardKey);
@@ -177,7 +178,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
         set({ progress });
         
         // BR-AUTO-ADV-01: Auto-advance after 250-400ms if enabled and not last card
-        if (autoAdvanceEnabled && !isLastCard) {
+        // Only auto-advance if we actually SET the status (not unset)
+        if (autoAdvanceEnabled && !isLastCard && !wasUnset) {
             setTimeout(async () => {
                 const { progress: currentProgress, cardOrder: currentOrder } = get();
                 if (currentProgress && currentProgress.index < currentOrder.length - 1) {
@@ -201,7 +203,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
         const isLastCard = progress.index >= cardOrder.length - 1;
         
         // BR-SET-02: Allow unset by clicking active state again
-        if (currentStatus === 'learning') {
+        const wasUnset = currentStatus === 'learning';
+        if (wasUnset) {
             progress.unsetCard(cardKey);
         } else {
             progress.markLearning(cardKey);
@@ -212,7 +215,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
         set({ progress });
         
         // BR-AUTO-ADV-01: Auto-advance after 250-400ms if enabled and not last card
-        if (autoAdvanceEnabled && !isLastCard) {
+        // Only auto-advance if we actually SET the status (not unset)
+        if (autoAdvanceEnabled && !isLastCard && !wasUnset) {
             setTimeout(async () => {
                 const { progress: currentProgress, cardOrder: currentOrder } = get();
                 if (currentProgress && currentProgress.index < currentOrder.length - 1) {

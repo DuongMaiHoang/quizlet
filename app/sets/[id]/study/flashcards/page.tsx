@@ -319,7 +319,7 @@ export default function FlashcardsPage() {
 
                 <button
                     onClick={next}
-                    disabled={progress.index >= cardOrder.length - 1}
+                    disabled={cardOrder.length === 0 || progress.index >= cardOrder.length - 1}
                     className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Next card"
                 >

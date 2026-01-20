@@ -123,8 +123,11 @@ test.describe('Flashcards Study Mode', () => {
     // Mark card 1 as Know
     await page.click('button:has-text("Know")');
     
-    // Check known count updates
-    await expect(page.locator('text=/\\d+ Know/')).toBeVisible();
+    // Verify visual feedback
+    await expect(page.locator('button:has-text("Know")')).toHaveClass(/border-success|bg-success/);
+    
+    // Check known count updates (should show "1 Known")
+    await expect(page.locator('text=/1 Known/')).toBeVisible();
     
     // Refresh page
     await page.reload();
@@ -135,8 +138,7 @@ test.describe('Flashcards Study Mode', () => {
     await expect(knowButton).toHaveClass(/border-success|bg-success/);
     
     // Known count should be correct
-    const knownText = await page.locator('text=/\\d+ Know/').textContent();
-    expect(knownText).toContain('1');
+    await expect(page.locator('text=/1 Known/')).toBeVisible();
   });
 
   test('T-FC-05: Mark Still learning + overwrite', async ({ page }) => {
@@ -302,8 +304,14 @@ test.describe('Flashcards Study Mode', () => {
     await page.goto(`/study/${setId}/flashcards`);
     await page.waitForSelector('text=Term 1');
     
+    // Verify we're on card 1
+    await expect(page.locator('text=Card 1 of 3')).toBeVisible();
+    
     // Mark card 1 as Know
     await page.click('button:has-text("Know")');
+    
+    // Verify visual feedback immediately
+    await expect(page.locator('button:has-text("Know")')).toHaveClass(/border-success|bg-success/);
     
     // Wait for auto-advance (300ms + some buffer)
     await page.waitForTimeout(500);
@@ -326,6 +334,9 @@ test.describe('Flashcards Study Mode', () => {
     // Mark card 1 as Still learning
     await page.click('button:has-text("Still learning")');
     
+    // Verify visual feedback immediately
+    await expect(page.locator('button:has-text("Still learning")')).toHaveClass(/border-warning|bg-warning/);
+    
     // Wait for auto-advance
     await page.waitForTimeout(500);
     
@@ -342,6 +353,10 @@ test.describe('Flashcards Study Mode', () => {
     await page.waitForSelector('text=Card 2 of 3');
     await page.click('button:has-text("Next")');
     await page.waitForSelector('text=Card 3 of 3');
+    
+    // Verify Next button is disabled on last card
+    const nextButton = page.locator('button:has-text("Next")');
+    await expect(nextButton).toBeDisabled();
     
     // Mark last card as Know
     await page.click('button:has-text("Know")');
