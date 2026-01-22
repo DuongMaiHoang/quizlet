@@ -50,6 +50,7 @@ export function ResetProgressModal({
         >
             <div
                 id="reset-modal"
+                data-testid="flashcard-reset-modal"
                 className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
                 tabIndex={-1}
@@ -71,12 +72,14 @@ export function ResetProgressModal({
 
                 <div className="flex items-center justify-end gap-3">
                     <button
+                        data-testid="flashcard-reset-cancel"
                         onClick={onClose}
                         className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
                     >
                         Cancel
                     </button>
                     <button
+                        data-testid="flashcard-reset-confirm"
                         onClick={() => {
                             onConfirm();
                             onClose();

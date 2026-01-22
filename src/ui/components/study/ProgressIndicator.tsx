@@ -24,15 +24,15 @@ export function ProgressIndicator({
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">
+                <span data-testid="flashcard-progress" className="text-muted">
                     Card {currentIndex + 1} of {total}
                 </span>
                 <div className="flex items-center gap-4">
                     <span className="text-muted">
-                        <span className="font-medium text-success">{knownCount}</span> Known
+                        <span data-testid="flashcard-known-count" className="font-medium text-success">{knownCount}</span> Known
                     </span>
                     <span className="text-muted">
-                        <span className="font-medium text-warning">{learningCount}</span> Learning
+                        <span data-testid="flashcard-learning-count" className="font-medium text-warning">{learningCount}</span> Learning
                     </span>
                 </div>
             </div>

@@ -26,12 +26,12 @@ export function ConfidenceButtons({
     return (
         <div className="flex items-center justify-center gap-4">
             <button
+                data-testid="flashcard-learning"
                 onClick={onMarkLearning}
-                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${
-                    isLearning
+                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${isLearning
                         ? 'border-warning bg-warning/10 text-warning'
                         : 'border-border text-foreground hover:bg-card-hover'
-                }`}
+                    }`}
                 aria-label="Mark as Still learning"
             >
                 <AlertCircle className={`mr-2 h-5 w-5 ${isLearning ? 'text-warning' : ''}`} />
@@ -39,12 +39,12 @@ export function ConfidenceButtons({
             </button>
 
             <button
+                data-testid="flashcard-know"
                 onClick={onMarkKnow}
-                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${
-                    isKnow
+                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${isKnow
                         ? 'border-success bg-success/10 text-success'
                         : 'border-border text-foreground hover:bg-card-hover'
-                }`}
+                    }`}
                 aria-label="Mark as Know"
             >
                 <CheckCircle2 className={`mr-2 h-5 w-5 ${isKnow ? 'text-success' : ''}`} />

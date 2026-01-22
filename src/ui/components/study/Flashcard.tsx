@@ -21,6 +21,7 @@ export function Flashcard({ term, definition, side, onFlip }: FlashcardProps) {
 
     return (
         <div
+            data-testid="flashcard-card"
             className="group relative h-96 cursor-pointer"
             onClick={onFlip}
             onKeyDown={(e) => {
@@ -46,7 +47,7 @@ export function Flashcard({ term, definition, side, onFlip }: FlashcardProps) {
                     <div className="mb-4 text-sm font-medium uppercase text-muted">
                         Term
                     </div>
-                    <div className="text-3xl font-bold text-foreground">
+                    <div data-testid="flashcard-term" className="text-3xl font-bold text-foreground">
                         {displayTerm}
                     </div>
                     <div className="mt-8 text-sm text-muted">
@@ -62,7 +63,7 @@ export function Flashcard({ term, definition, side, onFlip }: FlashcardProps) {
                     <div className="mb-4 text-sm font-medium uppercase text-muted">
                         Definition
                     </div>
-                    <div className="text-2xl font-semibold text-foreground">
+                    <div data-testid="flashcard-definition" className="text-2xl font-semibold text-foreground">
                         {displayDefinition}
                     </div>
                     <div className="mt-8 text-sm text-muted">

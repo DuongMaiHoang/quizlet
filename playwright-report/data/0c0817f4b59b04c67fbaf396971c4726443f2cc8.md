@@ -1,0 +1,64 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Q Quizlet Clone" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Q
+        - generic [ref=e6]: Quizlet Clone
+      - navigation [ref=e7]:
+        - link "Create Set" [ref=e8] [cursor=pointer]:
+          - /url: /sets/new
+          - img [ref=e9]
+          - generic [ref=e10]: Create Set
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - link "Back to set" [ref=e15] [cursor=pointer]:
+            - /url: /sets/test-set-1769105467664-3451
+            - img [ref=e16]
+            - text: Back to set
+          - heading "Test Flashcards Set" [level=1] [ref=e18]
+        - generic [ref=e19]:
+          - button "Toggle shuffle" [ref=e20]:
+            - img [ref=e21]
+            - text: Shuffle
+          - button "Reset progress" [ref=e27]:
+            - img [ref=e28]
+            - text: Reset
+      - generic [ref=e32]:
+        - generic [ref=e33]: Card 2 of 3
+        - generic [ref=e34]:
+          - generic [ref=e35]: 1 Known
+          - generic [ref=e36]: 0 Learning
+      - button "Flip card" [ref=e40] [cursor=pointer]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]: Term
+            - generic [ref=e44]: Term 2
+            - generic [ref=e45]: Click to flip or Press Space
+          - generic [ref=e46]:
+            - generic [ref=e47]: Definition
+            - generic [ref=e48]: Definition 2
+            - generic [ref=e49]: Click to flip back or Press Space
+      - generic [ref=e50]:
+        - button "Previous card" [ref=e51]:
+          - img [ref=e52]
+          - text: Previous
+        - button "Next card" [ref=e54]:
+          - text: Next
+          - img [ref=e55]
+      - generic [ref=e57]:
+        - button "Mark as Still learning" [ref=e58]:
+          - img [ref=e59]
+          - text: Still learning
+        - button "Mark as Know" [ref=e61]:
+          - img [ref=e62]
+          - text: Know
+  - button "Open Next.js Dev Tools" [ref=e70] [cursor=pointer]:
+    - img [ref=e71]
+  - alert [ref=e74]
+```

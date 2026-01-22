@@ -79,7 +79,7 @@ export default function FlashcardsPage() {
 
                 result.cards.forEach((card, index) => {
                     // Prefer card.id, fallback to setId::index
-                    const key = card.id 
+                    const key = card.id
                         ? CardKey.fromCardId(card.id).toString()
                         : CardKey.fromSetIdAndIndex(setId, index).toString();
                     keys.push(key);
@@ -174,14 +174,14 @@ export default function FlashcardsPage() {
         if (key) {
             markKnow(CardKey.fromString(key));
         }
-    }, [markKnow]);
+    }, [markKnow, progress, cardOrder]);
 
     const handleMarkLearning = useCallback(() => {
         const key = getCurrentCardKey();
         if (key) {
             markLearning(CardKey.fromString(key));
         }
-    }, [markLearning]);
+    }, [markLearning, progress, cardOrder]);
 
     const handleReset = useCallback(async () => {
         await resetProgress(setId);
@@ -265,18 +265,19 @@ export default function FlashcardsPage() {
 
                 <div className="flex flex-wrap gap-2">
                     <button
+                        data-testid="flashcard-shuffle-toggle"
                         onClick={() => toggleShuffle(originalCardKeys)}
-                        className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                            progress.order === 'shuffled'
-                                ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
-                                : 'border-border text-foreground hover:bg-card-hover'
-                        }`}
+                        className={`inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${progress.order === 'shuffled'
+                            ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
+                            : 'border-border text-foreground hover:bg-card-hover'
+                            }`}
                         aria-label="Toggle shuffle"
                     >
                         <Shuffle className="mr-2 h-4 w-4" />
                         {progress.order === 'shuffled' ? 'Shuffled' : 'Shuffle'}
                     </button>
                     <button
+                        data-testid="flashcard-reset"
                         onClick={() => setShowResetModal(true)}
                         className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
                         aria-label="Reset progress"
@@ -308,6 +309,7 @@ export default function FlashcardsPage() {
             {/* Navigation */}
             <div className="flex items-center justify-between">
                 <button
+                    data-testid="flashcard-prev"
                     onClick={prev}
                     disabled={progress.index === 0}
                     className="inline-flex items-center rounded-lg bg-card-hover px-6 py-3 text-sm font-medium text-foreground hover:bg-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -318,6 +320,7 @@ export default function FlashcardsPage() {
                 </button>
 
                 <button
+                    data-testid="flashcard-next"
                     onClick={next}
                     disabled={cardOrder.length === 0 || progress.index >= cardOrder.length - 1}
                     className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
