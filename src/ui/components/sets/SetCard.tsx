@@ -45,13 +45,13 @@ export function SetCard({ set, onDelete }: SetCardProps) {
 
     return (
         <div 
-            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer"
+            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer"
             onClick={handleCardClick}
         >
             {/* Content Section */}
             <div className="mb-5 space-y-3">
                 <Link href={`/sets/${set.id}`} className="block">
-                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2">
                         {set.title}
                     </h3>
                 </Link>
@@ -77,13 +77,13 @@ export function SetCard({ set, onDelete }: SetCardProps) {
                 <div className="flex items-center gap-2">
                     <Link
                         href={`/study/${set.id}/flashcards`}
-                        className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
                         Study
                     </Link>
                     <Link
                         href={`/sets/${set.id}/edit`}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-transparent px-3 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-transparent px-3 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
                         <Edit2 className="h-3.5 w-3.5" />
                         <span>Edit</span>
@@ -93,7 +93,7 @@ export function SetCard({ set, onDelete }: SetCardProps) {
                 {onDelete && (
                     <button
                         onClick={handleDelete}
-                        className="inline-flex items-center justify-center rounded-lg border border-border p-2 text-muted hover:border-error hover:bg-error/5 hover:text-error transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg border border-border p-2 text-muted hover:border-error hover:bg-error/5 hover:text-error transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-error/20 cursor-pointer"
                         aria-label="Delete set"
                     >
                         <Trash2 className="h-4 w-4" />

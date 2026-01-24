@@ -183,7 +183,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
             setTimeout(async () => {
                 const { progress: currentProgress, cardOrder: currentOrder } = get();
                 if (currentProgress && currentProgress.index < currentOrder.length - 1) {
-                    currentProgress.setIndex(currentProgress.index + 1);
+                    const nextIndex = currentProgress.index + 1;
+                    currentProgress.setIndex(nextIndex);
                     await container.saveFlashcardsProgress.execute(currentProgress);
                     set({ progress: currentProgress });
                 }
@@ -220,7 +221,8 @@ export const useFlashcardsStore = create<FlashcardsStoreState>((set, get) => ({
             setTimeout(async () => {
                 const { progress: currentProgress, cardOrder: currentOrder } = get();
                 if (currentProgress && currentProgress.index < currentOrder.length - 1) {
-                    currentProgress.setIndex(currentProgress.index + 1);
+                    const nextIndex = currentProgress.index + 1;
+                    currentProgress.setIndex(nextIndex);
                     await container.saveFlashcardsProgress.execute(currentProgress);
                     set({ progress: currentProgress });
                 }

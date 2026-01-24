@@ -28,7 +28,7 @@ export function ConfidenceButtons({
             <button
                 data-testid="flashcard-learning"
                 onClick={onMarkLearning}
-                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${isLearning
+                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer ${isLearning
                         ? 'border-warning bg-warning/10 text-warning'
                         : 'border-border text-foreground hover:bg-card-hover'
                     }`}
@@ -41,7 +41,7 @@ export function ConfidenceButtons({
             <button
                 data-testid="flashcard-know"
                 onClick={onMarkKnow}
-                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors ${isKnow
+                className={`inline-flex items-center rounded-lg border-2 px-6 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer ${isKnow
                         ? 'border-success bg-success/10 text-success'
                         : 'border-border text-foreground hover:bg-card-hover'
                     }`}

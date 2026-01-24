@@ -48,13 +48,18 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
+                        <label htmlFor="search-sets" className="sr-only">
+                            Search sets
+                        </label>
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                         <input
+                            id="search-sets"
                             type="text"
                             placeholder="Search sets..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="h-10 w-full min-w-[200px] rounded-lg border border-border bg-card pl-9 pr-4 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                            aria-label="Search sets"
                         />
                     </div>
                 </div>
@@ -63,7 +68,7 @@ export default function HomePage() {
             {isLoading ? (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-48 animate-pulse rounded-xl bg-card/50"></div>
+                        <div key={i} className="h-48 animate-pulse rounded-xl bg-card/50 motion-reduce:animate-none"></div>
                     ))}
                 </div>
             ) : filteredSets.length > 0 ? (

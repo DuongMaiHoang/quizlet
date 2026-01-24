@@ -158,7 +158,7 @@ export function SetForm({
                             <button
                                 type="button"
                                 onClick={() => setShowImport(true)}
-                                className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                                className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 <Import className="mr-2 h-4 w-4" />
                                 Nhập nhanh hàng loạt
@@ -166,7 +166,7 @@ export function SetForm({
                             <button
                                 type="button"
                                 onClick={handleAddCard}
-                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Card
@@ -181,7 +181,7 @@ export function SetForm({
                             <button
                                 type="button"
                                 onClick={() => setShowImport(true)}
-                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 <Import className="mr-2 h-4 w-4" />
                                 Dán nội dung để tạo thẻ
@@ -192,7 +192,7 @@ export function SetForm({
                     {cards.map((card, index) => (
                         <div
                             key={index}
-                            className="group relative rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/30"
+                            className="group relative rounded-xl border border-border bg-card p-6 transition-all duration-200 hover:border-primary/30"
                         >
                             {/* Card Number & Delete */}
                             <div className="mb-4 flex items-center justify-between">
@@ -204,7 +204,8 @@ export function SetForm({
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveCard(index)}
-                                        className="rounded-lg p-2 text-muted hover:bg-error/10 hover:text-error transition-colors"
+                                        className="rounded-lg p-2 text-muted hover:bg-error/10 hover:text-error transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-error/20 cursor-pointer"
+                                        aria-label={`Remove card ${index + 1}`}
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -247,14 +248,14 @@ export function SetForm({
                     <button
                         type="button"
                         onClick={() => router.back()}
-                        className="rounded-lg border border-border px-6 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                        className="rounded-lg border border-border px-6 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {submitting ? 'Saving...' : submitLabel}
                     </button>

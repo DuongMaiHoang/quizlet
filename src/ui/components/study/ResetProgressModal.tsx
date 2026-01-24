@@ -59,7 +59,7 @@ export function ResetProgressModal({
                     <h2 className="text-xl font-bold text-foreground">Reset progress?</h2>
                     <button
                         onClick={onClose}
-                        className="rounded-lg p-1 text-muted hover:bg-card-hover"
+                        className="rounded-lg p-1 text-muted hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                         aria-label="Close"
                     >
                         <X className="h-5 w-5" />
@@ -74,7 +74,7 @@ export function ResetProgressModal({
                     <button
                         data-testid="flashcard-reset-cancel"
                         onClick={onClose}
-                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
                         Cancel
                     </button>
@@ -84,7 +84,7 @@ export function ResetProgressModal({
                             onConfirm();
                             onClose();
                         }}
-                        className="rounded-lg bg-error px-4 py-2 text-sm font-medium text-white hover:bg-error/90 transition-colors"
+                        className="rounded-lg bg-error px-4 py-2 text-sm font-medium text-white hover:bg-error/90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-error/20 cursor-pointer"
                     >
                         Reset
                     </button>

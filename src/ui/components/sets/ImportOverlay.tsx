@@ -189,7 +189,8 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                         <h2 className="text-xl font-bold text-foreground">Nhập nhanh hàng loạt</h2>
                         <button
                             onClick={onClose}
-                            className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-foreground transition-colors"
+                            className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            aria-label="Close import overlay"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -210,15 +211,17 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
 
                             {/* Zone A: Paste Area */}
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-medium text-foreground">
+                                <label htmlFor="import-textarea" className="text-sm font-medium text-foreground">
                                     Dán nội dung
                                 </label>
                                 <textarea
+                                    id="import-textarea"
                                     value={rawText}
                                     onChange={(e) => setRawText(e.target.value)}
                                     onKeyDown={handleTextareaKeyDown}
                                     placeholder={"Ví dụ:\nTừ 1\tNghĩa 1\nTừ 2\tNghĩa 2\n\nHoặc:\nCâu hỏi 1 :: Trả lời 1\nCâu hỏi 2 :: Trả lời 2"}
                                     className="h-64 w-full rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none"
+                                    aria-label="Paste content for bulk import"
                                 />
                             </div>
 
@@ -269,10 +272,12 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                             </label>
                                             <input
                                                 type="text"
+                                                id="custom-qa-separator"
                                                 value={customQaSeparator}
                                                 onChange={(e) => setCustomQaSeparator(e.target.value)}
                                                 placeholder="Ví dụ: ::"
-                                                className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                                className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                                                aria-label="Custom question-answer separator"
                                             />
                                         </div>
                                         <div>
@@ -281,10 +286,12 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                             </label>
                                             <input
                                                 type="text"
+                                                id="custom-card-separator"
                                                 value={customCardSeparator}
                                                 onChange={(e) => setCustomCardSeparator(e.target.value)}
                                                 placeholder="Ví dụ: \n (xuống dòng)"
-                                                className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                                className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                                                aria-label="Custom card separator"
                                             />
                                         </div>
                                     </div>
@@ -380,14 +387,14 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                         <div className="flex gap-3">
                             <button
                                 onClick={onClose}
-                                className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-white/5 transition-colors"
+                                className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-white/5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 Hủy
                             </button>
                             <button
                                 onClick={handleImportClick}
                                 disabled={!canImport || hasCustomError}
-                                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 {canImport ? `Nhập ${parsed.stats.valid} thẻ` : 'Nhập thẻ'}
                             </button>
@@ -411,13 +418,13 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setShowConfirmModal(false)}
-                                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 Hủy
                             </button>
                             <button
                                 onClick={handleConfirmImport}
-                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 Nhập
                             </button>
