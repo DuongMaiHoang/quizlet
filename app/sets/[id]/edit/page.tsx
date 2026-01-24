@@ -112,6 +112,7 @@ export default function EditSetPage() {
                 initialCards={set.cards.map((c) => ({ term: c.term, definition: c.definition }))}
                 onSubmit={handleSubmit}
                 submitLabel="Save Changes"
+                setId={setId}
             />
         </div>
     );

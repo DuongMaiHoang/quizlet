@@ -65,7 +65,7 @@ export function parseImportText(
                 index: index + 1,
                 raw: rawBlock,
                 valid: false,
-                error: 'Missing separator between term and definition'
+                error: 'Thiếu ký tự tách Câu hỏi - Trả lời'
             };
         }
 
@@ -83,7 +83,7 @@ export function parseImportText(
                 index: index + 1,
                 raw: rawBlock,
                 valid: false,
-                error: 'Term is empty'
+                error: 'Câu hỏi trống'
             };
         }
 
@@ -92,7 +92,26 @@ export function parseImportText(
                 index: index + 1,
                 raw: rawBlock,
                 valid: false,
-                error: 'Definition is empty'
+                error: 'Trả lời trống'
+            };
+        }
+
+        // BR-IMP-61: Length validation (>2000 chars)
+        if (term.length > 2000) {
+            return {
+                index: index + 1,
+                raw: rawBlock,
+                valid: false,
+                error: 'Nội dung quá dài (câu hỏi > 2000 ký tự)'
+            };
+        }
+
+        if (definition.length > 2000) {
+            return {
+                index: index + 1,
+                raw: rawBlock,
+                valid: false,
+                error: 'Nội dung quá dài (trả lời > 2000 ký tự)'
             };
         }
 

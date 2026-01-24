@@ -13,6 +13,7 @@ interface SetFormProps {
     initialCards?: CreateCardDTO[];
     onSubmit: (title: string, description: string, cards: CreateCardDTO[]) => Promise<void>;
     submitLabel?: string;
+    setId?: string; // For draft autosave keying
 }
 
 /**
@@ -26,6 +27,7 @@ export function SetForm({
     initialCards = [],
     onSubmit,
     submitLabel = 'Create Set',
+    setId,
 }: SetFormProps) {
     const router = useRouter();
     const [title, setTitle] = useState(initialTitle);
@@ -47,9 +49,9 @@ export function SetForm({
     }, [toast]);
 
     const handleImport = (importedCards: CreateCardDTO[]) => {
-        // BR-IMP-01: Append logic
+        // BR-IMP-41: Append logic
         setCards((prev) => [...prev, ...importedCards]);
-        setToast({ msg: `${importedCards.length} questions added successfully`, type: 'success' });
+        setToast({ msg: `Đã thêm ${importedCards.length} thẻ`, type: 'success' });
         setShowImport(false);
 
         // Scroll to bottom (where new cards are)
@@ -159,7 +161,7 @@ export function SetForm({
                                 className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
                             >
                                 <Import className="mr-2 h-4 w-4" />
-                                Import
+                                Nhập nhanh hàng loạt
                             </button>
                             <button
                                 type="button"
@@ -175,14 +177,14 @@ export function SetForm({
                     {/* Empty State CTA for Import */}
                     {cards.length === 0 || (cards.length === 1 && !cards[0].term && !cards[0].definition) ? (
                         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-8 text-center">
-                            <p className="mb-4 text-muted-foreground">Start by adding questions manually or import a list.</p>
+                            <p className="mb-4 text-muted-foreground">Bắt đầu bằng cách thêm câu hỏi thủ công hoặc nhập danh sách.</p>
                             <button
                                 type="button"
                                 onClick={() => setShowImport(true)}
                                 className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
                             >
                                 <Import className="mr-2 h-4 w-4" />
-                                Import questions
+                                Dán nội dung để tạo thẻ
                             </button>
                         </div>
                     ) : null}
@@ -265,6 +267,7 @@ export function SetForm({
                     <ImportOverlay
                         onImport={handleImport}
                         onClose={() => setShowImport(false)}
+                        setId={setId}
                     />
                 )
             }
