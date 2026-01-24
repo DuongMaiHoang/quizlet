@@ -25,8 +25,29 @@ export function SetCard({ set, onDelete }: SetCardProps) {
         }
     };
 
+    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        const isActionButton = target.closest('a[href*="/study/"], a[href*="/edit"], button');
+
+        // If clicking on action buttons, don't navigate
+        if (isActionButton) {
+            return;
+        }
+
+        // If clicking on the title link, let it handle navigation
+        if (target.closest('a[href*="/sets/"]')) {
+            return;
+        }
+
+        // Otherwise, navigate to set detail
+        window.location.href = `/sets/${set.id}`;
+    };
+
     return (
-        <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-md">
+        <div 
+            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer"
+            onClick={handleCardClick}
+        >
             {/* Content Section */}
             <div className="mb-5 space-y-3">
                 <Link href={`/sets/${set.id}`} className="block">

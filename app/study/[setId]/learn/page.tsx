@@ -12,7 +12,7 @@ import {
     loadLearnSession,
     saveLearnSession,
     clearLearnSession,
-    type LearnOutcome,
+    type LearnStatus,
     type LearnPersistenceState,
 } from '@/ui/lib/learn/learnPersistence';
 
@@ -20,6 +20,13 @@ type ViewStatus = 'loading' | 'notfound' | 'empty' | 'ready' | 'buildError' | 'c
 
 interface FeedbackState {
     status: 'none' | 'correct' | 'incorrect';
+}
+
+interface ProgressStats {
+    correct: number;
+    incorrect: number;
+    skipped: number;
+    percent: number;
 }
 
 /**
@@ -33,6 +40,7 @@ interface FeedbackState {
  * - BR-ANS (answering & feedback)
  * - BR-KBD (keyboard & focus)
  * - BR-PRS (persistence & resume)
+ * - BR-ADP-* (adaptive retry & total progress)
  */
 export default function LearnCanonicalPage() {
     const params = useParams();
@@ -42,8 +50,11 @@ export default function LearnCanonicalPage() {
     const [set, setSet] = useState<SetDTO | null>(null);
     const [status, setStatus] = useState<ViewStatus>('loading');
     const [items, setItems] = useState<LearnItem[]>([]);
-    const [outcomes, setOutcomes] = useState<Record<string, LearnOutcome>>({});
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [statusByItemId, setStatusByItemId] = useState<Record<string, LearnStatus>>({});
+    const [currentIndex, setCurrentIndex] = useState(0); // index within current pool
+    const [attempt, setAttempt] = useState(1);
+    const [poolItemIds, setPoolItemIds] = useState<string[]>([]);
+    const [maxProgressPercent, setMaxProgressPercent] = useState(0);
     const [feedback, setFeedback] = useState<FeedbackState>({ status: 'none' });
     const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
     const [isBuilding, setIsBuilding] = useState(false);
@@ -52,11 +63,33 @@ export default function LearnCanonicalPage() {
     const firstOptionRef = useRef<HTMLButtonElement | null>(null);
     const continueButtonRef = useRef<HTMLButtonElement | null>(null);
 
-    const currentItem: LearnItem | undefined = items[currentIndex];
+    const currentItemId = poolItemIds[currentIndex];
+    const currentItem: LearnItem | undefined = items.find((item) => item.itemId === currentItemId);
 
     const navigateBackToSet = useCallback(() => {
         router.push(`/sets/${setId}`);
     }, [router, setId]);
+
+    const computeProgress = useCallback(
+        (statuses: Record<string, LearnStatus>, allItems: LearnItem[]): ProgressStats => {
+            let correct = 0;
+            let incorrect = 0;
+            let skipped = 0;
+
+            allItems.forEach((item) => {
+                const s = statuses[item.itemId] ?? 'unseen';
+                if (s === 'correct') correct++;
+                else if (s === 'incorrect') incorrect++;
+                else if (s === 'skipped') skipped++;
+            });
+
+            const total = allItems.length;
+            const percent = total > 0 ? Math.floor((correct / total) * 100) : 0;
+
+            return { correct, incorrect, skipped, percent };
+        },
+        []
+    );
 
     const initializeSession = useCallback(
         async (forceNew = false) => {
@@ -90,17 +123,26 @@ export default function LearnCanonicalPage() {
                 const state = persisted ?? buildInitialLearnState(setId, cards);
 
                 setItems(state.items);
-                setOutcomes(state.outcomesByItemId || {});
-                setCurrentIndex(
-                    state.currentIndex >= 0 && state.currentIndex < state.items.length
-                        ? state.currentIndex
-                        : 0
+                setStatusByItemId(state.statusByItemId || {});
+                setAttempt(state.attempt || 1);
+                setPoolItemIds(
+                    Array.isArray(state.poolItemIds) && state.poolItemIds.length > 0
+                        ? state.poolItemIds
+                        : state.items.map((i) => i.itemId)
                 );
+                const poolLength =
+                    Array.isArray(state.poolItemIds) && state.poolItemIds.length > 0
+                        ? state.poolItemIds.length
+                        : state.items.length;
+                setCurrentIndex(
+                    state.currentIndex >= 0 && state.currentIndex < poolLength ? state.currentIndex : 0
+                );
+                setMaxProgressPercent(state.maxProgressPercent ?? 0);
                 setFeedback({ status: 'none' });
                 setSelectedOptionId(null);
 
                 // If we restored a session that was already at/after the last item, treat as complete
-                if (state.currentIndex >= state.items.length) {
+                if (state.currentIndex >= poolLength) {
                     setStatus('complete');
                 } else {
                     setStatus('ready');
@@ -118,6 +160,33 @@ export default function LearnCanonicalPage() {
     useEffect(() => {
         initializeSession();
     }, [initializeSession]);
+
+    const persistState = useCallback(
+        (overrides?: Partial<LearnPersistenceState>) => {
+            if (!setId) return;
+
+            const base: LearnPersistenceState = {
+                version: 'v2',
+                setId,
+                items,
+                statusByItemId,
+                currentIndex,
+                attempt,
+                poolItemIds,
+                maxProgressPercent,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            const next: LearnPersistenceState = {
+                ...base,
+                ...overrides,
+            };
+
+            saveLearnSession(next);
+        },
+        [attempt, currentIndex, items, maxProgressPercent, poolItemIds, setId, statusByItemId]
+    );
 
     // Focus management (BR-KBD-003)
     useEffect(() => {
@@ -195,13 +264,13 @@ export default function LearnCanonicalPage() {
             }
             setLastContinueAt(now);
 
-            const isLastItem = currentIndex >= items.length - 1;
+            const isLastItem = currentIndex >= poolItemIds.length - 1;
 
             if (isLastItem) {
                 // Move index past last item to mark completion
-                const newIndex = items.length;
+                const newIndex = poolItemIds.length;
                 setCurrentIndex(newIndex);
-                saveLearnSession(setId, items, outcomes, newIndex);
+                persistState({ currentIndex: newIndex });
                 setStatus('complete');
                 return;
             }
@@ -210,7 +279,7 @@ export default function LearnCanonicalPage() {
             setCurrentIndex(nextIndex);
             setSelectedOptionId(null);
             setFeedback({ status: 'none' });
-            saveLearnSession(setId, items, outcomes, nextIndex);
+            persistState({ currentIndex: nextIndex });
         };
 
         // Bind handlers to outer scope
@@ -228,10 +297,10 @@ export default function LearnCanonicalPage() {
         currentItem,
         currentIndex,
         items,
-        outcomes,
+        poolItemIds,
         navigateBackToSet,
-        setId,
         lastContinueAt,
+        persistState,
     ]);
 
     const handleSelectOption = useCallback(
@@ -243,46 +312,93 @@ export default function LearnCanonicalPage() {
             if (!option) return;
 
             const isCorrect = option.isCorrect;
-            const outcome: LearnOutcome = isCorrect ? 'correct' : 'incorrect';
 
             setSelectedOptionId(optionId);
             setFeedback({ status: isCorrect ? 'correct' : 'incorrect' });
 
-            setOutcomes((prev) => {
-                const next = { ...prev, [currentItem.itemId]: outcome };
-                saveLearnSession(setId, items, next, currentIndex);
-                return next;
+            setStatusByItemId((prev) => {
+                const prevStatus = prev[currentItem.itemId] ?? 'unseen';
+
+                // BR-ADP-004 sticky correct: once correct, never regress within journey
+                let nextStatus: LearnStatus;
+                if (isCorrect) {
+                    nextStatus = 'correct';
+                } else if (prevStatus === 'correct') {
+                    nextStatus = 'correct';
+                } else {
+                    nextStatus = 'incorrect';
+                }
+
+                const nextMap: Record<string, LearnStatus> = {
+                    ...prev,
+                    [currentItem.itemId]: nextStatus,
+                };
+
+                const stats = computeProgress(nextMap, items);
+                const safePercent = Math.max(maxProgressPercent, stats.percent);
+                setMaxProgressPercent(safePercent);
+
+                persistState({
+                    statusByItemId: nextMap,
+                    maxProgressPercent: safePercent,
+                });
+
+                return nextMap;
             });
         },
-        [currentItem, feedback.status, setId, items, currentIndex]
+        [computeProgress, currentItem, feedback.status, items, maxProgressPercent, persistState]
     );
 
     const handleSkip = useCallback(() => {
         if (!currentItem) return;
         if (feedback.status !== 'none') return;
 
-        const outcome: LearnOutcome = 'skipped';
+        setStatusByItemId((prev) => {
+            const prevStatus = prev[currentItem.itemId] ?? 'unseen';
 
-        setOutcomes((prev) => {
-            const next = { ...prev, [currentItem.itemId]: outcome };
+            let nextStatus: LearnStatus;
+            if (prevStatus === 'correct') {
+                // sticky correct
+                nextStatus = 'correct';
+            } else {
+                nextStatus = 'skipped';
+            }
+
+            const nextMap: Record<string, LearnStatus> = {
+                ...prev,
+                [currentItem.itemId]: nextStatus,
+            };
+
+            const stats = computeProgress(nextMap, items);
+            const safePercent = Math.max(maxProgressPercent, stats.percent);
+            setMaxProgressPercent(safePercent);
+
             const nextIndex = currentIndex + 1;
 
             // If skipping last item, we'll transition to complete
-            if (nextIndex >= items.length) {
-                setCurrentIndex(items.length);
-                saveLearnSession(setId, items, next, items.length);
+            if (nextIndex >= poolItemIds.length) {
+                setCurrentIndex(poolItemIds.length);
+                persistState({
+                    statusByItemId: nextMap,
+                    currentIndex: poolItemIds.length,
+                    maxProgressPercent: safePercent,
+                });
                 setStatus('complete');
             } else {
                 setCurrentIndex(nextIndex);
-                saveLearnSession(setId, items, next, nextIndex);
+                persistState({
+                    statusByItemId: nextMap,
+                    currentIndex: nextIndex,
+                    maxProgressPercent: safePercent,
+                });
             }
 
-            return next;
+            return nextMap;
         });
 
         setSelectedOptionId(null);
         setFeedback({ status: 'none' });
-    }, [currentItem, feedback.status, currentIndex, items, setId]);
+    }, [computeProgress, currentItem, feedback.status, currentIndex, items, maxProgressPercent, persistState, poolItemIds.length]);
 
     const handleContinue = useCallback(() => {
         if (!currentItem) return;
@@ -293,12 +409,12 @@ export default function LearnCanonicalPage() {
         }
         setLastContinueAt(now);
 
-        const isLastItem = currentIndex >= items.length - 1;
+        const isLastItem = currentIndex >= poolItemIds.length - 1;
 
         if (isLastItem) {
-            const newIndex = items.length;
+            const newIndex = poolItemIds.length;
             setCurrentIndex(newIndex);
-            saveLearnSession(setId, items, outcomes, newIndex);
+            persistState({ currentIndex: newIndex });
             setStatus('complete');
             return;
         }
@@ -307,31 +423,17 @@ export default function LearnCanonicalPage() {
         setCurrentIndex(nextIndex);
         setSelectedOptionId(null);
         setFeedback({ status: 'none' });
-        saveLearnSession(setId, items, outcomes, nextIndex);
-    }, [currentItem, currentIndex, items, outcomes, setId, lastContinueAt]);
+        persistState({ currentIndex: nextIndex });
+    }, [currentItem, currentIndex, lastContinueAt, persistState, poolItemIds.length]);
 
     const handleRetryBuild = useCallback(() => {
         initializeSession(true);
     }, [initializeSession]);
 
-    const handleRestart = useCallback(() => {
+    const handleRestartFromScratch = useCallback(() => {
         clearLearnSession(setId);
         initializeSession(true);
     }, [initializeSession, setId]);
-
-    const computeSummary = () => {
-        let correct = 0;
-        let incorrect = 0;
-        let skipped = 0;
-
-        Object.values(outcomes).forEach((o) => {
-            if (o === 'correct') correct++;
-            else if (o === 'incorrect') incorrect++;
-            else if (o === 'skipped') skipped++;
-        });
-
-        return { correct, incorrect, skipped };
-    };
 
     const totalItems = items.length;
     const progressLabel =
@@ -340,6 +442,59 @@ export default function LearnCanonicalPage() {
             : totalItems > 0
             ? `${Math.min(currentIndex, totalItems)}/${totalItems}`
             : '';
+
+    const progressStats = computeProgress(statusByItemId, items);
+    const effectiveProgressPercent = Math.max(progressStats.percent, maxProgressPercent);
+
+    const getMotivationalText = (percent: number): string => {
+        if (percent >= 100) return 'Tuyệt vời! Bạn đã nắm vững bộ thẻ này.';
+        if (percent >= 75) return 'Chỉ còn vài câu nữa thôi!';
+        if (percent >= 50) return 'Sắp tới đích rồi, cố lên!';
+        if (percent >= 25) return 'Bạn đang tiến bộ rõ rệt.';
+        return 'Cứ từ từ, bạn đang làm tốt rồi.';
+    };
+
+    const renderProgressBanner = () => {
+        if (!set || totalItems === 0) return null;
+
+        return (
+            <div
+                data-testid="learn-progress-banner"
+                className="mb-6 rounded-2xl border border-border bg-card/70 p-4"
+            >
+                <div className="mb-1 text-sm text-muted">
+                    {getMotivationalText(effectiveProgressPercent)}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col">
+                        <span
+                            data-testid="learn-progress-label"
+                            className="text-xs font-medium uppercase tracking-wide text-muted"
+                        >
+                            Tiến độ học
+                        </span>
+                        <span
+                            data-testid="learn-progress-percent"
+                            className="text-lg font-semibold text-foreground"
+                        >
+                            {effectiveProgressPercent}%
+                        </span>
+                        <span className="text-xs text-muted">
+                            Đúng: {progressStats.correct} / {totalItems}
+                        </span>
+                    </div>
+                    <div className="flex-1">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-border/60">
+                            <div
+                                className="h-full rounded-full bg-primary transition-all duration-300"
+                                style={{ width: `${effectiveProgressPercent}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     // Shared wrapper with root test id
     const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -436,9 +591,15 @@ export default function LearnCanonicalPage() {
         );
     }
 
-    // Completion Screen (5.5, BR-CMP)
+    // Completion Screen with adaptive variants (BR-CMP + BR-ADP-010..031)
     if (status === 'complete') {
-        const summary = computeSummary();
+        const summary = progressStats;
+        const incorrectOrSkippedCount = items.filter((item) => {
+            const s = statusByItemId[item.itemId] ?? 'unseen';
+            return s === 'incorrect' || s === 'skipped';
+        }).length;
+
+        const hasMistakes = incorrectOrSkippedCount > 0;
 
         return (
             <Wrapper>
@@ -446,40 +607,87 @@ export default function LearnCanonicalPage() {
                     data-testid="learn-complete"
                     className="space-y-6 text-center"
                 >
-                    <h1 className="text-3xl font-bold text-foreground">Hoàn thành</h1>
-                    <div className="mx-auto max-w-sm space-y-3 rounded-2xl border border-border bg-card p-6">
-                        <div className="flex items-center justify-between text-sm text-foreground">
-                            <span>Đúng</span>
-                            <span>Đúng: {summary.correct}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm text-foreground">
-                            <span>Sai</span>
-                            <span>Sai: {summary.incorrect}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm text-foreground">
-                            <span>Bỏ qua</span>
-                            <span>Bỏ qua: {summary.skipped}</span>
-                        </div>
-                    </div>
+                    {renderProgressBanner()}
 
-                    <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                        <button
-                            type="button"
-                            data-testid="learn-restart"
-                            onClick={handleRestart}
-                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
-                        >
-                            Học lại
-                        </button>
-                        <button
-                            type="button"
-                            data-testid="learn-back-to-set"
-                            onClick={navigateBackToSet}
-                            className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
-                        >
-                            Về bộ thẻ
-                        </button>
-                    </div>
+                    {hasMistakes ? (
+                        <>
+                            <h1 className="text-3xl font-bold text-foreground">Chưa xong đâu</h1>
+                            <p className="text-sm text-muted">
+                                Hãy học lại những câu bạn chưa nắm vững.
+                            </p>
+                            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    data-testid="learn-retry-wrong"
+                                    onClick={() => {
+                                        const retryItems = items.filter((item) => {
+                                            const s = statusByItemId[item.itemId] ?? 'unseen';
+                                            return s === 'incorrect' || s === 'skipped';
+                                        });
+
+                                        const ids = retryItems.map((i) => i.itemId);
+
+                                        // Shuffle retry pool for attempt >= 2 (BR-ADP-022)
+                                        for (let i = ids.length - 1; i > 0; i--) {
+                                            const j = Math.floor(Math.random() * (i + 1));
+                                            [ids[i], ids[j]] = [ids[j], ids[i]];
+                                        }
+
+                                        const nextAttempt = attempt + 1;
+
+                                        setPoolItemIds(ids);
+                                        setCurrentIndex(0);
+                                        setAttempt(nextAttempt);
+                                        setFeedback({ status: 'none' });
+                                        setSelectedOptionId(null);
+                                        setStatus('ready');
+
+                                        persistState({
+                                            poolItemIds: ids,
+                                            currentIndex: 0,
+                                            attempt: nextAttempt,
+                                        });
+                                    }}
+                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                                >
+                                    {`Học lại các câu sai (${incorrectOrSkippedCount})`}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-testid="learn-back-to-set"
+                                    onClick={navigateBackToSet}
+                                    className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                                >
+                                    Về bộ thẻ
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h1 className="text-3xl font-bold text-foreground">Hoàn thành</h1>
+                            <p className="text-sm text-muted">
+                                Tuyệt vời! Bạn đã nắm vững bộ thẻ này.
+                            </p>
+                            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    data-testid="learn-restart-from-scratch"
+                                    onClick={handleRestartFromScratch}
+                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                                >
+                                    Học lại từ đầu
+                                </button>
+                                <button
+                                    type="button"
+                                    data-testid="learn-back-to-set"
+                                    onClick={navigateBackToSet}
+                                    className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                                >
+                                    Về bộ thẻ
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </Wrapper>
         );
@@ -498,6 +706,7 @@ export default function LearnCanonicalPage() {
 
     return (
         <Wrapper>
+            {renderProgressBanner()}
             {/* Top bar */}
             <div className="mb-6 flex items-center justify-between">
                 <button

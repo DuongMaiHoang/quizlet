@@ -6,19 +6,24 @@ import { buildLearnSessionFromCards } from './learnSessionBuilder';
  * Learn Mode - Local persistence with versioning
  *
  * BR-PRS-001..003
+ * BR-ADP-030..031, BR-ADP-040
  */
 
 const STORAGE_KEY_PREFIX = 'quizlet_learn_session_';
-const CURRENT_VERSION = 'v1';
+// Bump version when schema changes so we can safely reset incompatible data.
+const CURRENT_VERSION = 'v2';
 
-export type LearnOutcome = 'correct' | 'incorrect' | 'skipped';
+export type LearnStatus = 'unseen' | 'correct' | 'incorrect' | 'skipped';
 
 export interface LearnPersistenceState {
     version: string;
     setId: string;
     items: LearnItem[];
-    outcomesByItemId: Record<string, LearnOutcome>;
+    statusByItemId: Record<string, LearnStatus>;
     currentIndex: number;
+    attempt: number;
+    poolItemIds: string[];
+    maxProgressPercent: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -31,28 +36,19 @@ function getStorageKey(setId: string): string {
  * Persist session state locally keyed by setId.
  *
  * BR-PRS-001: Persist after any answered/skipped action
- * BR-PRS-003: Include version string
+ * BR-PRS-003 / BR-ADP-040: Include version string for safe invalidation
  */
-export function saveLearnSession(
-    setId: string,
-    items: LearnItem[],
-    outcomesByItemId: Record<string, LearnOutcome>,
-    currentIndex: number
-): void {
+export function saveLearnSession(state: LearnPersistenceState): void {
     try {
         const now = new Date().toISOString();
-        const state: LearnPersistenceState = {
+        const toStore: LearnPersistenceState = {
+            ...state,
             version: CURRENT_VERSION,
-            setId,
-            items,
-            outcomesByItemId,
-            currentIndex,
-            createdAt: now,
             updatedAt: now,
         };
 
-        const key = getStorageKey(setId);
-        localStorage.setItem(key, JSON.stringify(state));
+        const key = getStorageKey(state.setId);
+        localStorage.setItem(key, JSON.stringify(toStore));
     } catch (error) {
         // Ignore persistence errors to avoid breaking UX
         console.warn('Failed to save learn session:', error);
@@ -62,8 +58,8 @@ export function saveLearnSession(
 /**
  * Try to restore a Learn session for a set.
  *
- * BR-PRS-002: Resume same items, options, outcomes, index
- * BR-PRS-003: If version mismatch/corrupt, return null to trigger fresh session
+ * BR-PRS-002: Resume same items, options, statuses, index
+ * BR-PRS-003 / BR-ADP-040: If version mismatch/corrupt, return null to trigger fresh session
  */
 export function loadLearnSession(
     setId: string,
@@ -88,6 +84,16 @@ export function loadLearnSession(
             return null;
         }
 
+        // poolItemIds must be a subset of itemIds
+        const itemIds = new Set(parsed.items.map((i) => i.itemId));
+        if (
+            !Array.isArray(parsed.poolItemIds) ||
+            parsed.poolItemIds.length === 0 ||
+            parsed.poolItemIds.some((id) => !itemIds.has(id))
+        ) {
+            return null;
+        }
+
         return parsed;
     } catch (error) {
         console.warn('Failed to load learn session, starting fresh:', error);
@@ -97,6 +103,8 @@ export function loadLearnSession(
 
 /**
  * Build a fresh LearnSession and wrap it into a persistence-ready state.
+ *
+ * Used for attempt=1 main pool.
  */
 export function buildInitialLearnState(
     setId: string,
@@ -104,13 +112,17 @@ export function buildInitialLearnState(
 ): LearnPersistenceState {
     const session: LearnSession = buildLearnSessionFromCards(setId, cards);
     const now = new Date().toISOString();
+    const poolItemIds = session.items.map((item) => item.itemId);
 
     return {
         version: CURRENT_VERSION,
         setId,
         items: session.items,
-        outcomesByItemId: {},
+        statusByItemId: {},
         currentIndex: 0,
+        attempt: 1,
+        poolItemIds,
+        maxProgressPercent: 0,
         createdAt: now,
         updatedAt: now,
     };
@@ -118,7 +130,7 @@ export function buildInitialLearnState(
 
 /**
  * Clear persisted session for a set.
- * Used when restarting (BR-CMP-002, BR-PRS-003).
+ * Used when restarting from scratch (BR-ADP-031).
  */
 export function clearLearnSession(setId: string): void {
     try {
@@ -128,5 +140,4 @@ export function clearLearnSession(setId: string): void {
         console.warn('Failed to clear learn session:', error);
     }
 }
-
 
