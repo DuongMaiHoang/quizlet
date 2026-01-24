@@ -8,3 +8,4 @@ if (-not $env:HOME) {
     Write-Host "✅ HOME is already set to: $env:HOME" -ForegroundColor Green
 }
 
+

@@ -55,3 +55,4 @@ Nó phải hiển thị: `C:\Users\PC` (hoặc tên user của bạn)
 - Sau khi set vĩnh viễn, bạn không cần scripts nữa, có thể dùng trực tiếp `playwright test`
 - Nếu vẫn lỗi, thử khởi động lại máy tính
 
+

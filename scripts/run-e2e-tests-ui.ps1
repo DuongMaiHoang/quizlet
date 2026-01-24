@@ -10,3 +10,4 @@ if (-not $env:HOME) {
 Write-Host "🚀 Running Playwright tests in UI mode..." -ForegroundColor Cyan
 npx playwright test --ui
 
+

@@ -136,17 +136,17 @@ export default function SetDetailPage() {
                 </Link>
 
                 <Link
-                    href={`/sets/${setId}/study/learn`}
+                    href={`/study/${setId}/learn`}
                     className="group rounded-xl border border-border bg-card p-6 transition-all hover:border-primary hover:bg-card-hover hover:shadow-lg"
                 >
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/10">
                         <Brain className="h-6 w-6 text-secondary" />
                     </div>
                     <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                        Learn
+                        Học
                     </h3>
                     <p className="text-sm text-muted">
-                        Type answers and get instant feedback
+                        Luyện tập trắc nghiệm và xem đáp án đúng
                     </p>
                 </Link>
 

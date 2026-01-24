@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { X, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { CreateCardDTO } from '@/application/dto/SetDTO';
 import { parseImportText, ParseResult } from '@/ui/lib/importParse';
@@ -152,6 +152,34 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
     const canImport = parsed.stats.valid > 0;
     const hasCustomError = parseMode === 'custom' && !customQaSeparator.trim();
 
+    const handleTextareaKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+        const { key, shiftKey } = e;
+
+        // Xử lý Tab trong textarea: chèn ký tự tab, không cho trình duyệt chuyển focus
+        if (key === 'Tab' && !shiftKey) {
+            e.preventDefault();
+
+            const textarea = e.currentTarget;
+            const start = textarea.selectionStart ?? 0;
+            const end = textarea.selectionEnd ?? start;
+
+            const before = rawText.slice(0, start);
+            const after = rawText.slice(end);
+            const nextValue = `${before}\t${after}`;
+
+            setRawText(nextValue);
+
+            const nextPos = start + 1;
+            requestAnimationFrame(() => {
+                try {
+                    textarea.selectionStart = textarea.selectionEnd = nextPos;
+                } catch {
+                    // ignore selection errors
+                }
+            });
+        }
+    };
+
     return (
         <>
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -188,6 +216,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                 <textarea
                                     value={rawText}
                                     onChange={(e) => setRawText(e.target.value)}
+                                    onKeyDown={handleTextareaKeyDown}
                                     placeholder={"Ví dụ:\nTừ 1\tNghĩa 1\nTừ 2\tNghĩa 2\n\nHoặc:\nCâu hỏi 1 :: Trả lời 1\nCâu hỏi 2 :: Trả lời 2"}
                                     className="h-64 w-full rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none"
                                 />

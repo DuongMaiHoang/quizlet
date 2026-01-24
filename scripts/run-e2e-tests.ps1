@@ -15,3 +15,4 @@ $uiMode = if ($args -contains "--ui") { "--ui" } else { "" }
 Write-Host "🚀 Running Playwright tests..." -ForegroundColor Cyan
 npx playwright test $testCommand $uiMode
 
+
