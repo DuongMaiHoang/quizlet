@@ -12,6 +12,11 @@ A modern, clean-architecture study application built with Next.js, TypeScript, a
 - ✅ Add unlimited flashcards (up to 500 per set)
 - ✅ Search and filter sets by title/description
 - ✅ Responsive card-based UI
+- ✅ **Bulk Import**: Import questions from Word/Excel using custom separators (e.g., for MCQ)
+
+## 📖 User Guide
+
+For detailed instructions on how to use the app, including **Multiple Choice Question Import**, please refer to the [Business Guideline & User Guide](business_guide.md).
 
 ### Study Modes
 
