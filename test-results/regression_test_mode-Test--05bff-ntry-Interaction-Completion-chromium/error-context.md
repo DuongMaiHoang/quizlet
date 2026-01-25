@@ -1,0 +1,68 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Q Quizlet Clone" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Q
+        - generic [ref=e6]: Quizlet Clone
+      - navigation [ref=e7]:
+        - link "Create Set" [ref=e8] [cursor=pointer]:
+          - /url: /sets/new
+          - img [ref=e9]
+          - generic [ref=e10]: Create Set
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Test Complete!" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Here's how you did
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: 100%
+          - generic [ref=e19]: Your Score
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: "4"
+            - generic [ref=e23]: Total
+          - generic [ref=e24]:
+            - generic [ref=e25]: "4"
+            - generic [ref=e26]: Correct
+          - generic [ref=e27]:
+            - generic [ref=e28]: "0"
+            - generic [ref=e29]: Incorrect
+      - generic [ref=e30]:
+        - heading "Review Your Answers" [level=2] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]: Question 1 • Multiple Choice
+            - img [ref=e35]
+          - generic [ref=e37]: T2
+          - generic [ref=e39]: "Your answer: D2"
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: Question 2 • Written
+            - img [ref=e43]
+          - generic [ref=e45]: T1
+          - generic [ref=e47]: "Your answer: D1"
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Question 3 • Multiple Choice
+            - img [ref=e51]
+          - generic [ref=e53]: T3
+          - generic [ref=e55]: "Your answer: D3"
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: Question 4 • Written
+            - img [ref=e59]
+          - generic [ref=e61]: T4
+          - generic [ref=e63]: "Your answer: D4"
+      - generic [ref=e64]:
+        - link "Back to Set" [ref=e65] [cursor=pointer]:
+          - /url: /sets/test-mode-set-1769321714739
+        - button "Retake Test" [ref=e66]
+  - button "Open Next.js Dev Tools" [ref=e72] [cursor=pointer]:
+    - img [ref=e73]
+  - alert [ref=e76]
+```

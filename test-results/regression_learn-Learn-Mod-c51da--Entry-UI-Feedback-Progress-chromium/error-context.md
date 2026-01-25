@@ -1,0 +1,49 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Q Quizlet Clone" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Q
+        - generic [ref=e6]: Quizlet Clone
+      - navigation [ref=e7]:
+        - link "Create Set" [ref=e8] [cursor=pointer]:
+          - /url: /sets/new
+          - img [ref=e9]
+          - generic [ref=e10]: Create Set
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Bạn đang tiến bộ rõ rệt.
+        - generic [ref=e16]:
+          - generic [ref=e17]: Tiến độ học
+          - generic [ref=e18]: 25%
+          - generic [ref=e19]: "Đúng: 1 / 4"
+      - generic [ref=e23]:
+        - button "Quay lại" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - text: Quay lại
+        - generic [ref=e27]: Learn Algo Set
+        - generic [ref=e28]: 1/4
+      - generic [ref=e29]:
+        - generic [ref=e30]: A1
+        - generic [ref=e31]: Chọn đáp án đúng
+      - generic [ref=e32]:
+        - button "D1-Correct" [disabled] [pressed] [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: D1-Correct
+        - button "D2-Correct" [disabled] [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: D2-Correct
+        - button "D4-Correct" [disabled] [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: D4-Correct
+        - button "D3-Correct" [disabled] [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]: D3-Correct
+      - generic [ref=e41]:
+        - button "Bỏ qua" [disabled] [ref=e42]
+        - button "Tiếp tục" [active] [ref=e43] [cursor=pointer]
+      - generic [ref=e45]: Đúng rồi!
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]
+```

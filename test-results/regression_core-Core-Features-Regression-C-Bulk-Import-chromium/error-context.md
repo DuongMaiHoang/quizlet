@@ -1,0 +1,96 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Q Quizlet Clone" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Q
+        - generic [ref=e6]: Quizlet Clone
+      - navigation [ref=e7]:
+        - link "Create Set" [ref=e8] [cursor=pointer]:
+          - /url: /sets/new
+          - img [ref=e9]
+          - generic [ref=e10]: Create Set
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Create a New Set" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Add a title, description, and cards to create your study set
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Title *
+            - textbox "Title *" [ref=e20]:
+              - /placeholder: Enter a title for your set
+          - generic [ref=e21]:
+            - generic [ref=e22]: Description (optional)
+            - textbox "Description (optional)" [ref=e23]:
+              - /placeholder: Add a description...
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - heading "Cards" [level=2] [ref=e26]
+            - generic [ref=e27]:
+              - button "Nhập nhanh hàng loạt" [active] [ref=e28] [cursor=pointer]:
+                - img [ref=e29]
+                - text: Nhập nhanh hàng loạt
+              - button "Add Card" [ref=e32] [cursor=pointer]:
+                - img [ref=e33]
+                - text: Add Card
+          - generic [ref=e34]:
+            - paragraph [ref=e35]: Bắt đầu bằng cách thêm câu hỏi thủ công hoặc nhập danh sách.
+            - button "Dán nội dung để tạo thẻ" [ref=e36] [cursor=pointer]:
+              - img [ref=e37]
+              - text: Dán nội dung để tạo thẻ
+          - generic [ref=e40]:
+            - generic [ref=e42]:
+              - img [ref=e43]
+              - generic [ref=e50]: Card 1
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - generic [ref=e53]: Term
+                - textbox "Enter term" [ref=e54]
+              - generic [ref=e55]:
+                - generic [ref=e56]: Definition
+                - textbox "Enter definition" [ref=e57]
+        - generic [ref=e58]:
+          - button "Cancel" [ref=e59] [cursor=pointer]
+          - button "Create Set" [ref=e60] [cursor=pointer]
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - heading "Nhập nhanh hàng loạt" [level=2] [ref=e64]
+          - button "Close import overlay" [ref=e65] [cursor=pointer]:
+            - img [ref=e66]
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]: Dán nội dung
+              - textbox "Paste content for bulk import" [ref=e73]:
+                - /placeholder: "Ví dụ:\nTừ 1\tNghĩa 1\nTừ 2\tNghĩa 2\n\nHoặc:\nCâu hỏi 1 :: Trả lời 1\nCâu hỏi 2 :: Trả lời 2"
+            - generic [ref=e74]:
+              - text: Chọn kiểu tách
+              - generic [ref=e75]:
+                - generic [ref=e76] [cursor=pointer]:
+                  - 'radio "Mặc định: Tab (khuyên dùng)" [checked] [ref=e77]'
+                  - generic [ref=e78]: "Mặc định: Tab (khuyên dùng)"
+                - generic [ref=e79] [cursor=pointer]:
+                  - 'radio "Mặc định: Dấu ::" [ref=e80]'
+                  - generic [ref=e81]: "Mặc định: Dấu ::"
+                - generic [ref=e82] [cursor=pointer]:
+                  - radio "Tùy chỉnh" [ref=e83]
+                  - generic [ref=e84]: Tùy chỉnh
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - heading "Xem trước" [level=3] [ref=e87]
+              - generic [ref=e88]:
+                - generic [ref=e89]: 0 Hợp lệ
+                - generic [ref=e91]: 0 Lỗi
+            - paragraph [ref=e95]: Chưa nhận diện được thẻ nào. Hãy kiểm tra định dạng.
+        - generic [ref=e97]:
+          - button "Hủy" [ref=e98] [cursor=pointer]
+          - button "Nhập thẻ" [disabled] [ref=e99]
+  - button "Open Next.js Dev Tools" [ref=e105] [cursor=pointer]:
+    - img [ref=e106]
+  - alert [ref=e109]
+```

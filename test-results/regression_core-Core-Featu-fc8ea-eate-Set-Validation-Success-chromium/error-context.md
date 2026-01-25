@@ -1,0 +1,63 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Q Quizlet Clone" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Q
+        - generic [ref=e6]: Quizlet Clone
+      - navigation [ref=e7]:
+        - link "Create Set" [ref=e8] [cursor=pointer]:
+          - /url: /sets/new
+          - img [ref=e9]
+          - generic [ref=e10]: Create Set
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Create a New Set" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Add a title, description, and cards to create your study set
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Title *
+            - textbox "Title *" [active] [ref=e20]:
+              - /placeholder: Enter a title for your set
+          - generic [ref=e21]:
+            - generic [ref=e22]: Description (optional)
+            - textbox "Description (optional)" [ref=e23]:
+              - /placeholder: Add a description...
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - heading "Cards" [level=2] [ref=e26]
+            - generic [ref=e27]:
+              - button "Nhập nhanh hàng loạt" [ref=e28] [cursor=pointer]:
+                - img [ref=e29]
+                - text: Nhập nhanh hàng loạt
+              - button "Add Card" [ref=e32] [cursor=pointer]:
+                - img [ref=e33]
+                - text: Add Card
+          - generic [ref=e34]:
+            - paragraph [ref=e35]: Bắt đầu bằng cách thêm câu hỏi thủ công hoặc nhập danh sách.
+            - button "Dán nội dung để tạo thẻ" [ref=e36] [cursor=pointer]:
+              - img [ref=e37]
+              - text: Dán nội dung để tạo thẻ
+          - generic [ref=e40]:
+            - generic [ref=e42]:
+              - img [ref=e43]
+              - generic [ref=e50]: Card 1
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - generic [ref=e53]: Term
+                - textbox "Enter term" [ref=e54]
+              - generic [ref=e55]:
+                - generic [ref=e56]: Definition
+                - textbox "Enter definition" [ref=e57]
+        - generic [ref=e58]:
+          - button "Cancel" [ref=e59] [cursor=pointer]
+          - button "Create Set" [ref=e60] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e66] [cursor=pointer]:
+    - img [ref=e67]
+  - alert [ref=e70]
+```

@@ -152,8 +152,9 @@ test.describe('Flashcards Study Mode', () => {
     const knowButton = page.getByTestId('flashcard-know');
     await knowButton.click();
 
-    // Verify visual feedback - button should have success border class
+    // Verify visual feedback - button should have success border/text class
     await expect(knowButton).toHaveClass(/border-success/);
+    await expect(knowButton).toHaveClass(/text-success/);
 
     // Check known count updates
     const knownCount = page.getByTestId('flashcard-known-count');
@@ -187,6 +188,7 @@ test.describe('Flashcards Study Mode', () => {
 
     // Check status changed - learning button should have warning border
     await expect(learningButton).toHaveClass(/border-warning/);
+    await expect(learningButton).toHaveClass(/text-warning/);
 
     // Counts should update - known should be 0, learning should be 1
     await expect(page.getByTestId('flashcard-known-count')).toHaveText('0');
@@ -307,10 +309,12 @@ test.describe('Flashcards Study Mode', () => {
     // K marks Know
     await page.keyboard.press('k');
     await expect(page.getByTestId('flashcard-know')).toHaveClass(/border-success/);
+    await expect(page.getByTestId('flashcard-know')).toHaveClass(/text-success/);
 
     // L marks Learning
     await page.keyboard.press('l');
     await expect(page.getByTestId('flashcard-learning')).toHaveClass(/border-warning/);
+    await expect(page.getByTestId('flashcard-learning')).toHaveClass(/text-warning/);
 
     // S toggles shuffle
     await page.keyboard.press('s');
