@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Settings } from 'lucide-react';
 import type { SetDTO, CardDTO } from '@/application/dto/SetDTO';
 import { container } from '@/lib/di';
 import type { LearnItem } from '@/ui/lib/learn/learnSessionBuilder';
@@ -15,6 +15,13 @@ import {
     type LearnStatus,
     type LearnPersistenceState,
 } from '@/ui/lib/learn/learnPersistence';
+import {
+    loadLearnSettings,
+    saveLearnSettings,
+    getDefaultLearnSettings,
+    type LearnSettingsV2,
+} from '@/ui/lib/learn/learnSettingsPersistence';
+import { LearnSettingsOverlay } from '@/ui/components/learn/LearnSettingsOverlay';
 
 type ViewStatus = 'loading' | 'notfound' | 'empty' | 'ready' | 'buildError' | 'complete';
 
@@ -59,6 +66,8 @@ export default function LearnCanonicalPage() {
     const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
     const [isBuilding, setIsBuilding] = useState(false);
     const [lastContinueAt, setLastContinueAt] = useState<number | null>(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [learnSettings, setLearnSettings] = useState<LearnSettingsV2>(getDefaultLearnSettings());
 
     const firstOptionRef = useRef<HTMLButtonElement | null>(null);
     const continueButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -112,6 +121,10 @@ export default function LearnCanonicalPage() {
                 }
 
                 setSet(result);
+
+                // Load settings
+                const settings = loadLearnSettings(setId);
+                setLearnSettings(settings);
 
                 const cards: CardDTO[] = result.cards;
                 let persisted: LearnPersistenceState | null = null;
@@ -435,6 +448,24 @@ export default function LearnCanonicalPage() {
         initializeSession(true);
     }, [initializeSession, setId]);
 
+    const handleSettingsApply = useCallback(
+        (newSettings: LearnSettingsV2) => {
+            saveLearnSettings(setId, newSettings);
+            setLearnSettings(newSettings);
+            setIsSettingsOpen(false);
+            // BR-LRN-V2-030: Changes take effect from next question
+            // Current question is not disrupted
+        },
+        [setId]
+    );
+
+    // Available question types (v2: only MCQ is implemented)
+    const availableTypes = {
+        mcq: true,
+        multiSelect: false, // Not implemented yet
+        written: false, // Not implemented yet
+    };
+
     const totalItems = items.length;
     const progressLabel =
         status === 'ready' && totalItems > 0
@@ -720,11 +751,22 @@ export default function LearnCanonicalPage() {
                 <div className="text-sm font-medium text-foreground truncate max-w-xs text-center">
                     {set.title}
                 </div>
-                <div
-                    data-testid="learn-progress"
-                    className="text-sm text-muted"
-                >
-                    {progressLabel}
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsSettingsOpen(true)}
+                        data-testid="learn-settings-open"
+                        className="inline-flex items-center rounded-lg p-2 text-sm text-muted hover:bg-card-hover hover:text-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                        aria-label="Tùy chọn"
+                    >
+                        <Settings className="h-5 w-5" />
+                    </button>
+                    <div
+                        data-testid="learn-progress"
+                        className="text-sm text-muted"
+                    >
+                        {progressLabel}
+                    </div>
                 </div>
             </div>
 
@@ -833,6 +875,15 @@ export default function LearnCanonicalPage() {
                     )}
                 </div>
             )}
+
+            {/* Settings Overlay */}
+            <LearnSettingsOverlay
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onApply={handleSettingsApply}
+                initialSettings={learnSettings}
+                availableTypes={availableTypes}
+            />
         </Wrapper>
     );
 }
