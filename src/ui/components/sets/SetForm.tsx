@@ -16,6 +16,7 @@ interface SetFormProps {
     onSubmit: (title: string, description: string, cards: CreateCardDTO[]) => Promise<void>;
     submitLabel?: string;
     setId?: string; // For draft autosave keying
+    autoAddCard?: boolean; // If true, add a new card on mount and scroll to it
 }
 
 /**
@@ -30,6 +31,7 @@ export function SetForm({
     onSubmit,
     submitLabel = 'Create Set',
     setId,
+    autoAddCard = false,
 }: SetFormProps) {
     const router = useRouter();
     const [title, setTitle] = useState(initialTitle);
@@ -41,6 +43,24 @@ export function SetForm({
     const [error, setError] = useState<string | null>(null);
     const [showImport, setShowImport] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+    // Auto-add card and scroll to it if requested
+    useEffect(() => {
+        if (autoAddCard) {
+            // Add a new empty card
+            const newCard = { term: '', definition: '' };
+            setCards((prev) => [...prev, newCard]);
+            
+            // Scroll to the last card after a short delay to ensure DOM is updated
+            setTimeout(() => {
+                const cardElements = document.querySelectorAll('[data-card-index]');
+                if (cardElements.length > 0) {
+                    const lastCard = cardElements[cardElements.length - 1];
+                    lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        }
+    }, [autoAddCard]); // Only run once on mount if autoAddCard is true
 
     // Clear toast after timeout (1.5s for Pinyin, 3s for others)
     useEffect(() => {
@@ -195,6 +215,7 @@ export function SetForm({
                     {cards.map((card, index) => (
                         <div
                             key={index}
+                            data-card-index={index}
                             className="group relative rounded-xl border border-border bg-card p-6 transition-all duration-200 hover:border-primary/30"
                         >
                             {/* Card Number & Delete */}

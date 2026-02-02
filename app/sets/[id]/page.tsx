@@ -7,8 +7,9 @@ import { SetDTO } from '@/application/dto/SetDTO';
 import { container } from '@/lib/di';
 import { LoadingState } from '@/ui/components/common/LoadingState';
 import { ErrorState } from '@/ui/components/common/ErrorState';
-import { BookOpen, Edit, Trash2, Brain, Zap, FileText } from 'lucide-react';
+import { BookOpen, Edit, Trash2, Brain, Zap, FileText, Plus } from 'lucide-react';
 import { SmartText } from '@/ui/components/common/SmartText';
+import { HanziBoostSettings } from '@/ui/components/settings/HanziBoostSettings';
 
 /**
  * Set Detail Page
@@ -104,7 +105,15 @@ export default function SetDetailPage() {
                         </div>
                     </div>
 
-                    <div className="flex space-x-2">
+                    <div className="flex items-center space-x-2">
+                        <HanziBoostSettings />
+                        <Link
+                            href={`/sets/${setId}/edit?action=addCard`}
+                            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Card
+                        </Link>
                         <Link
                             href={`/sets/${setId}/edit`}
                             className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors"

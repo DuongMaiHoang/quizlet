@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { SetForm } from '@/ui/components/sets/SetForm';
 import { container } from '@/lib/di';
 import { SetDTO, CreateCardDTO } from '@/application/dto/SetDTO';
@@ -17,7 +17,9 @@ import Link from 'next/link';
 export default function EditSetPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const setId = params.id as string;
+    const shouldAddCard = searchParams.get('action') === 'addCard';
 
     const [set, setSet] = useState<SetDTO | null>(null);
     const [loading, setLoading] = useState(true);
@@ -113,6 +115,7 @@ export default function EditSetPage() {
                 onSubmit={handleSubmit}
                 submitLabel="Save Changes"
                 setId={setId}
+                autoAddCard={shouldAddCard}
             />
         </div>
     );

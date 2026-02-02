@@ -35,6 +35,7 @@ import {
     normalizeWrittenAnswer,
 } from '@/ui/lib/learn/learnSessionBuilder';
 import { SmartText } from '@/ui/components/common/SmartText';
+import { HanziBoostSettings } from '@/ui/components/settings/HanziBoostSettings';
 
 type ViewStatus = 'loading' | 'notfound' | 'empty' | 'ready' | 'buildError' | 'complete';
 
@@ -816,9 +817,9 @@ export default function LearnCanonicalPage() {
         );
     };
 
-    // Shared wrapper with root test id
+    // Shared wrapper with root test id - Learn mode scale 0.88
     const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-        <div data-testid="learn-root" className="mx-auto max-w-3xl px-4 py-8">
+        <div data-testid="learn-root" className="mx-auto max-w-3xl px-4 py-8" style={{ zoom: 0.88 }}>
             {children}
         </div>
     );
@@ -1245,9 +1246,10 @@ export default function LearnCanonicalPage() {
                     Quay lại
                 </button>
                 <div className="text-sm font-medium text-foreground truncate max-w-xs text-center">
-                    {set.title}
+                    <SmartText text={set.title} />
                 </div>
                 <div className="flex items-center gap-3">
+                    <HanziBoostSettings />
                     <button
                         type="button"
                         onClick={() => setIsSettingsOpen(true)}

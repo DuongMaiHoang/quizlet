@@ -21,6 +21,11 @@
 }
 
 /* Base styles */
+html {
+  /* Default web scale 90% */
+  zoom: 0.9;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);

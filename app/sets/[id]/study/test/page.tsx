@@ -248,7 +248,9 @@ export default function TestPage() {
                     <ChevronLeft className="mr-1 h-4 w-4" />
                     Back to set
                 </Link>
-                <h1 className="text-3xl font-bold text-foreground">{set.title}</h1>
+                <h1 className="text-3xl font-bold text-foreground">
+                    <SmartText text={set.title} />
+                </h1>
             </div>
 
             {/* Progress */}
