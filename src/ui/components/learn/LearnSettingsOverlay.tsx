@@ -210,7 +210,9 @@ export function LearnSettingsOverlay({
                                     Chọn tất cả đáp án đúng
                                 </label>
                                 {!availableTypes.multiSelect && (
-                                    <p className="mt-1 text-xs text-muted">Sắp có</p>
+                                    <p className="mt-1 text-xs text-muted">
+                                        Bộ thẻ quá ít để dùng dạng câu hỏi này.
+                                    </p>
                                 )}
                             </div>
                             <button

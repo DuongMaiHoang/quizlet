@@ -32,6 +32,34 @@ body {
   }
 }
 
+/* KaiTi Chinese Font Support v1 */
+/* TODO: If bundling a WOFF2 font is allowed, add @font-face for "AppKaiti" here */
+/* For now, using system font fallback chain */
+.font-kaiti {
+  font-family: "KaiTi", "KaiTi_GB2312", "STKaiti", "Kaiti SC", "Kaiti TC", serif !important;
+  /* Also apply font-size boost for input fields */
+  font-size: calc(1em + var(--hanzi-boost, 5px)) !important;
+  /* Override bold from parent containers - Hanzi must NOT be bold */
+  font-weight: 400 !important;
+}
+
+/* Hanzi UX Uplift v1 - Hard Enforcement + Auto Size Boost */
+/* CSS variable for user-adjustable boost (default 5px) */
+:root {
+  --hanzi-boost: 5px;
+}
+
+/* Centralized Hanzi typography contract */
+.hanzi-text {
+  font-family: "KaiTi", "KaiTi_GB2312", "STKaiti", "Kaiti SC", "Kaiti TC", serif !important;
+  /* Auto size boost: base size + user-adjustable boost */
+  font-size: calc(1em + var(--hanzi-boost, 5px)) !important;
+  /* Ensure line-height remains readable */
+  line-height: 1.5;
+  /* Override bold from parent containers - Hanzi must NOT be bold */
+  font-weight: 400 !important;
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,

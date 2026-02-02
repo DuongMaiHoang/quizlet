@@ -1,6 +1,7 @@
 'use client';
 
 import { CardSide } from '@/domain/entities/FlashcardsProgress';
+import { SmartText } from '@/ui/components/common/SmartText';
 
 interface FlashcardProps {
     term: string;
@@ -48,7 +49,7 @@ export function Flashcard({ term, definition, side, onFlip }: FlashcardProps) {
                         Term
                     </div>
                     <div data-testid="flashcard-term" className="text-3xl font-bold text-foreground">
-                        {displayTerm}
+                        <SmartText text={displayTerm} />
                     </div>
                     <div className="mt-8 text-sm text-muted">
                         Click to flip or Press Space
@@ -64,7 +65,7 @@ export function Flashcard({ term, definition, side, onFlip }: FlashcardProps) {
                         Definition
                     </div>
                     <div data-testid="flashcard-definition" className="text-2xl font-semibold text-foreground">
-                        {displayDefinition}
+                        <SmartText text={displayDefinition} />
                     </div>
                     <div className="mt-8 text-sm text-muted">
                         Click to flip back or Press Space

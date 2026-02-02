@@ -8,6 +8,7 @@ import { container } from '@/lib/di';
 import { LoadingState } from '@/ui/components/common/LoadingState';
 import { ErrorState } from '@/ui/components/common/ErrorState';
 import { BookOpen, Edit, Trash2, Brain, Zap, FileText } from 'lucide-react';
+import { SmartText } from '@/ui/components/common/SmartText';
 
 /**
  * Set Detail Page
@@ -87,9 +88,13 @@ export default function SetDetailPage() {
             <div className="space-y-4">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
-                        <h1 className="text-4xl font-bold text-foreground">{set.title}</h1>
+                        <h1 className="text-4xl font-bold text-foreground">
+                            <SmartText text={set.title} />
+                        </h1>
                         {set.description && (
-                            <p className="mt-2 text-lg text-muted">{set.description}</p>
+                            <p className="mt-2 text-lg text-muted">
+                                <SmartText text={set.description} />
+                            </p>
                         )}
                         <div className="mt-4 flex items-center space-x-4 text-sm text-muted">
                             <div className="flex items-center space-x-1">
@@ -183,13 +188,17 @@ export default function SetDetailPage() {
                                     <div className="mb-1 text-xs font-medium uppercase text-muted">
                                         Term
                                     </div>
-                                    <div className="text-foreground">{card.term}</div>
+                                    <div className="text-foreground">
+                                        <SmartText text={card.term} />
+                                    </div>
                                 </div>
                                 <div>
                                     <div className="mb-1 text-xs font-medium uppercase text-muted">
                                         Definition
                                     </div>
-                                    <div className="text-foreground">{card.definition}</div>
+                                    <div className="text-foreground">
+                                        <SmartText text={card.definition} />
+                                    </div>
                                 </div>
                             </div>
                         </div>

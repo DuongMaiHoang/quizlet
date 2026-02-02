@@ -6,6 +6,8 @@ import { CreateCardDTO } from '@/application/dto/SetDTO';
 import { X, Plus, GripVertical, Import, CheckCircle2 } from 'lucide-react';
 import { ImportOverlay } from './ImportOverlay';
 import { useEffect } from 'react';
+import { getKaitiClass } from '@/ui/lib/typography';
+import { PinyinInput } from './PinyinInput';
 
 interface SetFormProps {
     initialTitle?: string;
@@ -40,10 +42,11 @@ export function SetForm({
     const [showImport, setShowImport] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-    // Clear toast after 3 seconds
+    // Clear toast after timeout (1.5s for Pinyin, 3s for others)
     useEffect(() => {
         if (toast) {
-            const timer = setTimeout(() => setToast(null), 3000);
+            const timeout = toast.msg.startsWith('Pinyin:') ? 1500 : 3000;
+            const timer = setTimeout(() => setToast(null), timeout);
             return () => clearTimeout(timer);
         }
     }, [toast]);
@@ -218,24 +221,26 @@ export function SetForm({
                                     <label className="mb-2 block text-sm font-medium text-foreground">
                                         Term
                                     </label>
-                                    <input
+                                    <PinyinInput
                                         type="text"
                                         value={card.term}
                                         onChange={(e) => handleCardChange(index, 'term', e.target.value)}
                                         placeholder="Enter term"
                                         className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        onShowToast={(msg) => setToast({ msg, type: 'success' })}
                                     />
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-sm font-medium text-foreground">
                                         Definition
                                     </label>
-                                    <input
+                                    <PinyinInput
                                         type="text"
                                         value={card.definition}
                                         onChange={(e) => handleCardChange(index, 'definition', e.target.value)}
                                         placeholder="Enter definition"
                                         className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        onShowToast={(msg) => setToast({ msg, type: 'success' })}
                                     />
                                 </div>
                             </div>

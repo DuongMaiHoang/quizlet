@@ -22,11 +22,28 @@ import {
     type LearnSettingsV2,
 } from '@/ui/lib/learn/learnSettingsPersistence';
 import { LearnSettingsOverlay } from '@/ui/components/learn/LearnSettingsOverlay';
+import type { QuestionType } from '@/ui/lib/learn/questionTypeEngine';
+import {
+    getNextQuestion,
+    computeEffectiveTypes,
+    generateTypeRotationOrder,
+    type QuestionTypeEngineInput,
+} from '@/ui/lib/learn/questionTypeEngine';
+import {
+    buildMultiSelectOptionsForItem,
+    isMultiSelectAvailable,
+    normalizeWrittenAnswer,
+} from '@/ui/lib/learn/learnSessionBuilder';
+import { SmartText } from '@/ui/components/common/SmartText';
 
 type ViewStatus = 'loading' | 'notfound' | 'empty' | 'ready' | 'buildError' | 'complete';
 
 interface FeedbackState {
     status: 'none' | 'correct' | 'incorrect';
+}
+
+interface ValidationError {
+    message: string;
 }
 
 interface ProgressStats {
@@ -68,9 +85,20 @@ export default function LearnCanonicalPage() {
     const [lastContinueAt, setLastContinueAt] = useState<number | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [learnSettings, setLearnSettings] = useState<LearnSettingsV2>(getDefaultLearnSettings());
+    // v3: Question type engine state
+    const [currentQuestionType, setCurrentQuestionType] = useState<QuestionType>('MCQ');
+    const [typeRotationOrder, setTypeRotationOrder] = useState<QuestionType[]>([]);
+    const [lastTypeUsed, setLastTypeUsed] = useState<QuestionType | null>(null);
+    // v3: Multi-select state
+    const [selectedOptionIds, setSelectedOptionIds] = useState<Set<string>>(new Set());
+    // v3: Written state
+    const [writtenInput, setWrittenInput] = useState<string>('');
+    const [validationError, setValidationError] = useState<ValidationError | null>(null);
 
     const firstOptionRef = useRef<HTMLButtonElement | null>(null);
     const continueButtonRef = useRef<HTMLButtonElement | null>(null);
+    const writtenInputRef = useRef<HTMLInputElement | null>(null);
+    const checkButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const currentItemId = poolItemIds[currentIndex];
     const currentItem: LearnItem | undefined = items.find((item) => item.itemId === currentItemId);
@@ -153,6 +181,13 @@ export default function LearnCanonicalPage() {
                 setMaxProgressPercent(state.maxProgressPercent ?? 0);
                 setFeedback({ status: 'none' });
                 setSelectedOptionId(null);
+                // v3: Restore question type state
+                setCurrentQuestionType(state.currentQuestionType ?? 'MCQ');
+                setTypeRotationOrder(state.typeRotationOrder ?? []);
+                setLastTypeUsed(state.lastTypeUsed ?? null);
+                setSelectedOptionIds(new Set());
+                setWrittenInput('');
+                setValidationError(null);
 
                 // If we restored a session that was already at/after the last item, treat as complete
                 if (state.currentIndex >= poolLength) {
@@ -179,7 +214,7 @@ export default function LearnCanonicalPage() {
             if (!setId) return;
 
             const base: LearnPersistenceState = {
-                version: 'v2',
+                version: 'v3',
                 setId,
                 items,
                 statusByItemId,
@@ -189,6 +224,9 @@ export default function LearnCanonicalPage() {
                 maxProgressPercent,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                currentQuestionType,
+                typeRotationOrder,
+                lastTypeUsed,
             };
 
             const next: LearnPersistenceState = {
@@ -198,7 +236,18 @@ export default function LearnCanonicalPage() {
 
             saveLearnSession(next);
         },
-        [attempt, currentIndex, items, maxProgressPercent, poolItemIds, setId, statusByItemId]
+        [
+            attempt,
+            currentIndex,
+            items,
+            maxProgressPercent,
+            poolItemIds,
+            setId,
+            statusByItemId,
+            currentQuestionType,
+            typeRotationOrder,
+            lastTypeUsed,
+        ]
     );
 
     // Focus management (BR-KBD-003)
@@ -316,10 +365,12 @@ export default function LearnCanonicalPage() {
         persistState,
     ]);
 
+    // MCQ handler (v1/v2 behavior)
     const handleSelectOption = useCallback(
         (optionId: string) => {
             if (!currentItem) return;
             if (feedback.status !== 'none') return;
+            if (currentQuestionType !== 'MCQ') return; // Only for MCQ
 
             const option = currentItem.options.find((opt) => opt.optionId === optionId);
             if (!option) return;
@@ -359,8 +410,158 @@ export default function LearnCanonicalPage() {
                 return nextMap;
             });
         },
-        [computeProgress, currentItem, feedback.status, items, maxProgressPercent, persistState]
+        [
+            computeProgress,
+            currentItem,
+            feedback.status,
+            items,
+            maxProgressPercent,
+            persistState,
+            currentQuestionType,
+        ]
     );
+
+    // Multi-select handlers
+    const handleMultiSelectToggle = useCallback(
+        (optionId: string) => {
+            if (!currentItem) return;
+            if (feedback.status !== 'none') return;
+            if (currentQuestionType !== 'MULTI_SELECT') return;
+
+            setValidationError(null);
+            setSelectedOptionIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(optionId)) {
+                    next.delete(optionId);
+                } else {
+                    next.add(optionId);
+                }
+                return next;
+            });
+        },
+        [currentItem, feedback.status, currentQuestionType]
+    );
+
+    const handleMultiSelectCheck = useCallback(() => {
+        if (!currentItem) return;
+        if (feedback.status !== 'none') return;
+        if (currentQuestionType !== 'MULTI_SELECT') return;
+
+        // BR-LRN-V3-MS-010: Validation
+        if (selectedOptionIds.size === 0) {
+            setValidationError({ message: 'Hãy chọn ít nhất 1 đáp án.' });
+            return;
+        }
+
+        setValidationError(null);
+
+        // BR-MS-001: Exact match required
+        const correctOptionIds = new Set(currentItem.correctOptionIds || []);
+        const selectedSet = new Set(selectedOptionIds);
+        const isCorrect =
+            correctOptionIds.size === selectedSet.size &&
+            Array.from(correctOptionIds).every((id) => selectedSet.has(id));
+
+        setFeedback({ status: isCorrect ? 'correct' : 'incorrect' });
+
+        setStatusByItemId((prev) => {
+            const prevStatus = prev[currentItem.itemId] ?? 'unseen';
+
+            let nextStatus: LearnStatus;
+            if (isCorrect) {
+                nextStatus = 'correct';
+            } else if (prevStatus === 'correct') {
+                nextStatus = 'correct';
+            } else {
+                nextStatus = 'incorrect';
+            }
+
+            const nextMap: Record<string, LearnStatus> = {
+                ...prev,
+                [currentItem.itemId]: nextStatus,
+            };
+
+            const stats = computeProgress(nextMap, items);
+            const safePercent = Math.max(maxProgressPercent, stats.percent);
+            setMaxProgressPercent(safePercent);
+
+            persistState({
+                statusByItemId: nextMap,
+                maxProgressPercent: safePercent,
+            });
+
+            return nextMap;
+        });
+    }, [
+        currentItem,
+        feedback.status,
+        currentQuestionType,
+        selectedOptionIds,
+        computeProgress,
+        items,
+        maxProgressPercent,
+        persistState,
+    ]);
+
+    // Written handlers
+    const handleWrittenCheck = useCallback(() => {
+        if (!currentItem) return;
+        if (feedback.status !== 'none') return;
+        if (currentQuestionType !== 'WRITTEN') return;
+
+        // BR-LRN-V3-WR-010: Validation
+        if (!writtenInput.trim()) {
+            setValidationError({ message: 'Vui lòng nhập câu trả lời.' });
+            return;
+        }
+
+        setValidationError(null);
+
+        // BR-WR-001: Normalized match
+        const normalizedInput = normalizeWrittenAnswer(writtenInput);
+        const normalizedCorrect = normalizeWrittenAnswer(currentItem.correctAnswer);
+        const isCorrect = normalizedInput === normalizedCorrect;
+
+        setFeedback({ status: isCorrect ? 'correct' : 'incorrect' });
+
+        setStatusByItemId((prev) => {
+            const prevStatus = prev[currentItem.itemId] ?? 'unseen';
+
+            let nextStatus: LearnStatus;
+            if (isCorrect) {
+                nextStatus = 'correct';
+            } else if (prevStatus === 'correct') {
+                nextStatus = 'correct';
+            } else {
+                nextStatus = 'incorrect';
+            }
+
+            const nextMap: Record<string, LearnStatus> = {
+                ...prev,
+                [currentItem.itemId]: nextStatus,
+            };
+
+            const stats = computeProgress(nextMap, items);
+            const safePercent = Math.max(maxProgressPercent, stats.percent);
+            setMaxProgressPercent(safePercent);
+
+            persistState({
+                statusByItemId: nextMap,
+                maxProgressPercent: safePercent,
+            });
+
+            return nextMap;
+        });
+    }, [
+        currentItem,
+        feedback.status,
+        currentQuestionType,
+        writtenInput,
+        computeProgress,
+        items,
+        maxProgressPercent,
+        persistState,
+    ]);
 
     const handleSkip = useCallback(() => {
         if (!currentItem) return;
@@ -409,9 +610,22 @@ export default function LearnCanonicalPage() {
             return nextMap;
         });
 
+        // Reset all question type states
         setSelectedOptionId(null);
+        setSelectedOptionIds(new Set());
+        setWrittenInput('');
+        setValidationError(null);
         setFeedback({ status: 'none' });
-    }, [computeProgress, currentItem, feedback.status, currentIndex, items, maxProgressPercent, persistState, poolItemIds.length]);
+    }, [
+        computeProgress,
+        currentItem,
+        feedback.status,
+        currentIndex,
+        items,
+        maxProgressPercent,
+        persistState,
+        poolItemIds.length,
+    ]);
 
     const handleContinue = useCallback(() => {
         if (!currentItem) return;
@@ -434,7 +648,11 @@ export default function LearnCanonicalPage() {
 
         const nextIndex = currentIndex + 1;
         setCurrentIndex(nextIndex);
+        // Reset all question type states
         setSelectedOptionId(null);
+        setSelectedOptionIds(new Set());
+        setWrittenInput('');
+        setValidationError(null);
         setFeedback({ status: 'none' });
         persistState({ currentIndex: nextIndex });
     }, [currentItem, currentIndex, lastContinueAt, persistState, poolItemIds.length]);
@@ -459,12 +677,83 @@ export default function LearnCanonicalPage() {
         [setId]
     );
 
-    // Available question types (v2: only MCQ is implemented)
+    // Available question types (v3: all implemented)
+    const multiSelectAvailable = set ? isMultiSelectAvailable(set.cards) : false;
     const availableTypes = {
         mcq: true,
-        multiSelect: false, // Not implemented yet
-        written: false, // Not implemented yet
+        multiSelect: multiSelectAvailable,
+        written: true,
     };
+
+    // Compute effective types for engine
+    const enabledTypes: QuestionType[] = [];
+    if (learnSettings.questionTypes.mcqEnabled) enabledTypes.push('MCQ');
+    if (learnSettings.questionTypes.multiSelectEnabled && availableTypes.multiSelect)
+        enabledTypes.push('MULTI_SELECT');
+    if (learnSettings.questionTypes.writtenEnabled) enabledTypes.push('WRITTEN');
+
+    const availableTypesArray: QuestionType[] = [];
+    if (availableTypes.mcq) availableTypesArray.push('MCQ');
+    if (availableTypes.multiSelect) availableTypesArray.push('MULTI_SELECT');
+    if (availableTypes.written) availableTypesArray.push('WRITTEN');
+
+    // Determine current question type using engine (if not already set or if settings changed)
+    useEffect(() => {
+        if (status !== 'ready' || !currentItem) return;
+
+        const effectiveTypes = computeEffectiveTypes(enabledTypes, availableTypesArray);
+        if (effectiveTypes.length === 0) {
+            // ENG-001: No effective types - should show error and open settings
+            // For now, we'll default to MCQ if available
+            if (availableTypes.mcq) {
+                setCurrentQuestionType('MCQ');
+            }
+            return;
+        }
+
+        // Generate or reuse type rotation order
+        // Regenerate if: length mismatch, attempt changed, or effectiveTypes changed (mid-session settings)
+        const currentEffectiveTypesInRotation = typeRotationOrder.length > 0 
+            ? Array.from(new Set(typeRotationOrder)).sort()
+            : [];
+        const newEffectiveTypesSorted = [...effectiveTypes].sort();
+        const effectiveTypesChanged =
+            currentEffectiveTypesInRotation.length !== newEffectiveTypesSorted.length ||
+            !currentEffectiveTypesInRotation.every((t, i) => t === newEffectiveTypesSorted[i]);
+
+        // Regenerate rotation order only when pool size or effective type set changes.
+        // NOTE: We intentionally do NOT regenerate on every render for attempt > 1,
+        // otherwise setState here would cause a render loop.
+        if (typeRotationOrder.length !== poolItemIds.length || effectiveTypesChanged) {
+            const newOrder = generateTypeRotationOrder(
+                effectiveTypes,
+                attempt,
+                poolItemIds
+            );
+            setTypeRotationOrder(newOrder);
+        }
+
+        // Get question type for current index
+        if (currentIndex < typeRotationOrder.length) {
+            const nextType = typeRotationOrder[currentIndex];
+            setCurrentQuestionType(nextType);
+            setLastTypeUsed(nextType);
+        } else if (typeRotationOrder.length > 0) {
+            // Fallback: use round-robin
+            const nextType = effectiveTypes[currentIndex % effectiveTypes.length];
+            setCurrentQuestionType(nextType);
+            setLastTypeUsed(nextType);
+        }
+    }, [
+        status,
+        currentItem,
+        currentIndex,
+        enabledTypes,
+        availableTypesArray,
+        poolItemIds,
+        attempt,
+        typeRotationOrder.length,
+    ]);
 
     const totalItems = items.length;
     const progressLabel =
@@ -735,6 +1024,213 @@ export default function LearnCanonicalPage() {
 
     const isFeedbackState = feedback.status !== 'none';
 
+    // Build multi-select options if needed
+    const multiSelectData =
+        currentQuestionType === 'MULTI_SELECT' && set && currentItem
+            ? (() => {
+                  // Find the card index for current item
+                  const cardIndex = set.cards.findIndex((card) => card.id === currentItem.cardId);
+                  if (cardIndex === -1) return null;
+                  return buildMultiSelectOptionsForItem(setId, set.cards, cardIndex);
+              })()
+            : null;
+
+    // Render MCQ question
+    const renderMCQ = () => {
+        if (!currentItem) return null;
+
+        return (
+            <>
+                {/* Prompt card */}
+                <div className="mb-6 rounded-2xl border border-border bg-card p-6">
+                    <div
+                        data-testid="learn-prompt"
+                        className="mb-4 text-2xl font-bold text-foreground"
+                    >
+                        <SmartText text={currentItem.prompt} />
+                    </div>
+                    <div className="text-sm text-muted">Chọn đáp án đúng</div>
+                </div>
+
+                {/* Options */}
+                <div className="mb-6 space-y-3">
+                    {currentItem.options.map((option, index) => {
+                        const optionIndex = index + 1;
+                        const testId = `learn-option-${optionIndex}` as
+                            | 'learn-option-1'
+                            | 'learn-option-2'
+                            | 'learn-option-3'
+                            | 'learn-option-4';
+
+                        const isSelected = selectedOptionId === option.optionId;
+                        const isCorrect = option.isCorrect;
+
+                        let optionStyle =
+                            'w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer';
+
+                        if (!isFeedbackState) {
+                            optionStyle +=
+                                ' border-border bg-card hover:bg-card-hover text-foreground';
+                        } else {
+                            if (isCorrect) {
+                                optionStyle +=
+                                    ' border-success bg-success/10 text-success';
+                            } else if (isSelected && !isCorrect) {
+                                optionStyle +=
+                                    ' border-error bg-error/10 text-error';
+                            } else {
+                                optionStyle +=
+                                    ' border-border bg-card text-foreground opacity-60';
+                            }
+                        }
+
+                        return (
+                            <button
+                                key={option.optionId}
+                                type="button"
+                                data-testid={testId}
+                                ref={index === 0 ? firstOptionRef : null}
+                                onClick={() => handleSelectOption(option.optionId)}
+                                disabled={isFeedbackState}
+                                aria-pressed={isSelected}
+                                className={optionStyle}
+                            >
+                                <span className="line-clamp-2">
+                                    <SmartText text={option.label} />
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </>
+        );
+    };
+
+    // Render Multi-select question
+    const renderMultiSelect = () => {
+        if (!currentItem || !multiSelectData) return null;
+
+        return (
+            <>
+                {/* Prompt card */}
+                <div className="mb-6 rounded-2xl border border-border bg-card p-6">
+                    <div
+                        data-testid="learn-prompt"
+                        className="mb-4 text-2xl font-bold text-foreground"
+                    >
+                        <SmartText text={currentItem.prompt} />
+                    </div>
+                    <div className="text-sm text-muted">Chọn tất cả đáp án đúng</div>
+                </div>
+
+                {/* Validation error */}
+                {validationError && (
+                    <div className="mb-4 rounded-lg border border-error bg-error/10 p-3 text-sm text-error">
+                        {validationError.message}
+                    </div>
+                )}
+
+                {/* Options */}
+                <div className="mb-6 space-y-3">
+                    {multiSelectData.options.map((option, index) => {
+                        const isSelected = selectedOptionIds.has(option.optionId);
+                        const isCorrect = option.isCorrect;
+                        const correctOptionIds = new Set(multiSelectData.correctOptionIds);
+
+                        let optionStyle =
+                            'w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer flex items-center gap-3';
+
+                        if (!isFeedbackState) {
+                            optionStyle +=
+                                ' border-border bg-card hover:bg-card-hover text-foreground';
+                        } else {
+                            if (isCorrect) {
+                                optionStyle +=
+                                    ' border-success bg-success/10 text-success';
+                            } else if (isSelected && !isCorrect) {
+                                optionStyle +=
+                                    ' border-error bg-error/10 text-error';
+                            } else {
+                                optionStyle +=
+                                    ' border-border bg-card text-foreground opacity-60';
+                            }
+                        }
+
+                        return (
+                            <button
+                                key={option.optionId}
+                                type="button"
+                                onClick={() => handleMultiSelectToggle(option.optionId)}
+                                disabled={isFeedbackState}
+                                className={optionStyle}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    readOnly
+                                    className="h-4 w-4 rounded border-border"
+                                />
+                                <span className="line-clamp-2 flex-1 text-left">
+                                    <SmartText text={option.label} />
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </>
+        );
+    };
+
+    // Render Written question
+    const renderWritten = () => {
+        if (!currentItem) return null;
+
+        return (
+            <>
+                {/* Prompt card */}
+                <div className="mb-6 rounded-2xl border border-border bg-card p-6">
+                    <div
+                        data-testid="learn-prompt"
+                        className="mb-4 text-2xl font-bold text-foreground"
+                    >
+                        <SmartText text={currentItem.prompt} />
+                    </div>
+                    <div className="text-sm text-muted">Tự luận</div>
+                </div>
+
+                {/* Validation error */}
+                {validationError && (
+                    <div className="mb-4 rounded-lg border border-error bg-error/10 p-3 text-sm text-error">
+                        {validationError.message}
+                    </div>
+                )}
+
+                {/* Input */}
+                <div className="mb-6">
+                    <input
+                        ref={writtenInputRef}
+                        type="text"
+                        value={writtenInput}
+                        onChange={(e) => {
+                            setWrittenInput(e.target.value);
+                            setValidationError(null);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !isFeedbackState && writtenInput.trim()) {
+                                e.preventDefault();
+                                handleWrittenCheck();
+                            }
+                        }}
+                        placeholder="Nhập câu trả lời..."
+                        disabled={isFeedbackState}
+                        className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+                        data-testid="learn-written-input"
+                    />
+                </div>
+            </>
+        );
+    };
+
     return (
         <Wrapper>
             {renderProgressBanner()}
@@ -770,65 +1266,10 @@ export default function LearnCanonicalPage() {
                 </div>
             </div>
 
-            {/* Prompt card */}
-            <div className="mb-6 rounded-2xl border border-border bg-card p-6">
-                <div
-                    data-testid="learn-prompt"
-                    className="mb-4 text-2xl font-bold text-foreground"
-                >
-                    {currentItem.prompt}
-                </div>
-                <div className="text-sm text-muted">Chọn đáp án đúng</div>
-            </div>
-
-            {/* Options */}
-            <div className="mb-6 space-y-3">
-                {currentItem.options.map((option, index) => {
-                    const optionIndex = index + 1;
-                    const testId = `learn-option-${optionIndex}` as
-                        | 'learn-option-1'
-                        | 'learn-option-2'
-                        | 'learn-option-3'
-                        | 'learn-option-4';
-
-                    const isSelected = selectedOptionId === option.optionId;
-                    const isCorrect = option.isCorrect;
-
-                    let optionStyle =
-                        'w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer';
-
-                    if (!isFeedbackState) {
-                        optionStyle +=
-                            ' border-border bg-card hover:bg-card-hover text-foreground';
-                    } else {
-                        if (isCorrect) {
-                            optionStyle +=
-                                ' border-success bg-success/10 text-success';
-                        } else if (isSelected && !isCorrect) {
-                            optionStyle +=
-                                ' border-error bg-error/10 text-error';
-                        } else {
-                            optionStyle +=
-                                ' border-border bg-card text-foreground opacity-60';
-                        }
-                    }
-
-                    return (
-                        <button
-                            key={option.optionId}
-                            type="button"
-                            data-testid={testId}
-                            ref={index === 0 ? firstOptionRef : null}
-                            onClick={() => handleSelectOption(option.optionId)}
-                            disabled={isFeedbackState}
-                            aria-pressed={isSelected}
-                            className={optionStyle}
-                        >
-                            <span className="line-clamp-2">{option.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
+            {/* Question type-specific rendering */}
+            {currentQuestionType === 'MCQ' && renderMCQ()}
+            {currentQuestionType === 'MULTI_SELECT' && renderMultiSelect()}
+            {currentQuestionType === 'WRITTEN' && renderWritten()}
 
             {/* Bottom actions & feedback */}
             <div className="flex items-center justify-between">
@@ -842,17 +1283,41 @@ export default function LearnCanonicalPage() {
                     Bỏ qua
                 </button>
 
-                {isFeedbackState && (
-                    <button
-                        type="button"
-                        data-testid="learn-continue"
-                        ref={continueButtonRef}
-                        onClick={handleContinue}
-                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                    >
-                        Tiếp tục
-                    </button>
-                )}
+                <div className="flex gap-3">
+                    {/* Check button for Multi-select and Written */}
+                    {!isFeedbackState &&
+                        (currentQuestionType === 'MULTI_SELECT' ||
+                            currentQuestionType === 'WRITTEN') && (
+                            <button
+                                ref={checkButtonRef}
+                                type="button"
+                                data-testid="learn-check"
+                                onClick={() => {
+                                    if (currentQuestionType === 'MULTI_SELECT') {
+                                        handleMultiSelectCheck();
+                                    } else if (currentQuestionType === 'WRITTEN') {
+                                        handleWrittenCheck();
+                                    }
+                                }}
+                                className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            >
+                                Kiểm tra
+                            </button>
+                        )}
+
+                    {/* Continue button (feedback state) */}
+                    {isFeedbackState && (
+                        <button
+                            type="button"
+                            data-testid="learn-continue"
+                            ref={continueButtonRef}
+                            onClick={handleContinue}
+                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                        >
+                            Tiếp tục
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Feedback area */}
@@ -862,15 +1327,11 @@ export default function LearnCanonicalPage() {
                     className="mt-6 rounded-xl border border-border bg-card p-4"
                 >
                     {feedback.status === 'correct' ? (
-                        <div className="text-sm font-medium text-success">
-                            Đúng rồi!
-                        </div>
+                        <div className="text-sm font-medium text-success">Đúng rồi!</div>
                     ) : (
                         <div className="space-y-1 text-sm text-foreground">
                             <div className="font-medium text-error">Chưa đúng</div>
-                            <div>
-                                Đáp án đúng là: {currentItem.correctAnswer}
-                            </div>
+                            <div>Đáp án đúng là: <SmartText text={currentItem.correctAnswer} /></div>
                         </div>
                     )}
                 </div>

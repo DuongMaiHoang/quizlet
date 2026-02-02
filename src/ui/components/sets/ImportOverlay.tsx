@@ -4,6 +4,8 @@ import { useState, useEffect, type KeyboardEvent as ReactKeyboardEvent } from 'r
 import { X, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { CreateCardDTO } from '@/application/dto/SetDTO';
 import { parseImportText, ParseResult } from '@/ui/lib/importParse';
+import { SmartText } from '@/ui/components/common/SmartText';
+import { PinyinTextarea } from './PinyinTextarea';
 
 interface ImportOverlayProps {
     onImport: (cards: CreateCardDTO[]) => void;
@@ -214,7 +216,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                 <label htmlFor="import-textarea" className="text-sm font-medium text-foreground">
                                     Dán nội dung
                                 </label>
-                                <textarea
+                                <PinyinTextarea
                                     id="import-textarea"
                                     value={rawText}
                                     onChange={(e) => setRawText(e.target.value)}
@@ -222,6 +224,10 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                     placeholder={"Ví dụ:\nTừ 1\tNghĩa 1\nTừ 2\tNghĩa 2\n\nHoặc:\nCâu hỏi 1 :: Trả lời 1\nCâu hỏi 2 :: Trả lời 2"}
                                     className="h-64 w-full rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none"
                                     aria-label="Paste content for bulk import"
+                                    onShowToast={(msg) => {
+                                        // Show toast in ImportOverlay (could add toast state if needed)
+                                        console.log('Pinyin toast:', msg);
+                                    }}
                                 />
                             </div>
 
@@ -338,11 +344,15 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                             <div className="flex flex-1 gap-4">
                                                 <div className="flex-1">
                                                     <div className="mb-1 text-[10px] uppercase text-muted/50 font-bold">Câu hỏi</div>
-                                                    <div className="text-foreground whitespace-pre-wrap">{row.card.term}</div>
+                                                    <div className="text-foreground whitespace-pre-wrap">
+                                                        <SmartText text={row.card.term} />
+                                                    </div>
                                                 </div>
                                                 <div className="flex-1 border-l border-border pl-4">
                                                     <div className="mb-1 text-[10px] uppercase text-muted/50 font-bold">Trả lời</div>
-                                                    <div className="text-foreground whitespace-pre-wrap">{row.card.definition}</div>
+                                                    <div className="text-foreground whitespace-pre-wrap">
+                                                        <SmartText text={row.card.definition} />
+                                                    </div>
                                                 </div>
                                                 <div className="shrink-0 pt-0.5">
                                                     <CheckCircle2 className="h-4 w-4 text-success" />

@@ -23,6 +23,8 @@ export interface LearnItem {
     correctAnswer: string;
     options: LearnOption[];
     createdAtIndex: number;
+    // v3: Multi-select support
+    correctOptionIds?: string[]; // For multi-select: array of correct optionIds
 }
 
 export interface LearnSession {
@@ -68,8 +70,7 @@ function shuffleWithSeed<T>(items: T[], seed: string): T[] {
 }
 
 /**
- * Build options for a single item from the full card list.
- *
+ * Build options for MCQ (single-choice)
  * BR-MCQ-001: optionCount = min(4, N)
  * BR-MCQ-002: exactly one correct option
  * BR-MCQ-003: distractors from other cards in same set
@@ -78,7 +79,7 @@ function shuffleWithSeed<T>(items: T[], seed: string): T[] {
  * BR-MCQ-006: stable members, order randomized once
  * BR-MCQ-007: label may be truncated in UI, value is full text
  */
-function buildOptionsForItem(
+function buildMCQOptionsForItem(
     setId: string,
     cards: CardDTO[],
     currentIndex: number
@@ -152,7 +153,7 @@ export function buildLearnSessionFromCards(setId: string, cards: CardDTO[]): Lea
         const promptRaw = card.term?.trim() || '(Không có thuật ngữ)';
         const correctRaw = card.definition?.trim() || '(Không có nội dung)';
 
-        const options = buildOptionsForItem(setId, cards, index);
+        const options = buildMCQOptionsForItem(setId, cards, index);
 
         return {
             itemId: `item-${card.id}-${index}`,
@@ -169,6 +170,128 @@ export function buildLearnSessionFromCards(setId: string, cards: CardDTO[]): Lea
         setId,
         items,
     };
+}
+
+/**
+ * Build options for Multi-select question
+ * MS-SET-001: correct set size = 2 by default
+ * MS-SET-010: correctOptions = focus item + 1 additional correct answer
+ * MS-SET-011: target total = 6, minimum 4, no duplicates
+ */
+export function buildMultiSelectOptionsForItem(
+    setId: string,
+    cards: CardDTO[],
+    currentIndex: number
+): { options: LearnOption[]; correctOptionIds: string[] } {
+    const totalCards = cards.length;
+    const targetTotal = Math.min(6, Math.max(4, totalCards));
+    const correctCount = 2; // MS-SET-001: fixed at 2 for v3
+
+    const currentCard = cards[currentIndex];
+    const correctValue1 = currentCard.definition?.trim() || '(Không có nội dung)';
+    const correctLabel1 = correctValue1;
+
+    const options: LearnOption[] = [];
+    const correctOptionIds: string[] = [];
+
+    // First correct option (focus item)
+    const correctOpt1: LearnOption = {
+        optionId: `opt-${currentCard.id}-correct-1`,
+        label: correctLabel1,
+        value: correctValue1,
+        isCorrect: true,
+    };
+    options.push(correctOpt1);
+    correctOptionIds.push(correctOpt1.optionId);
+
+    const usedNormalized = new Set<string>();
+    usedNormalized.add(normalizeLabel(correctLabel1));
+
+    // Second correct option: find next item with different answer
+    let foundSecondCorrect = false;
+    for (let i = 0; i < cards.length && !foundSecondCorrect; i++) {
+        if (i === currentIndex) continue;
+
+        const candidateCard = cards[i];
+        const candidateValue = candidateCard.definition?.trim() || '(Không có nội dung)';
+        const normalized = normalizeLabel(candidateValue);
+
+        if (!usedNormalized.has(normalized)) {
+            usedNormalized.add(normalized);
+            const correctOpt2: LearnOption = {
+                optionId: `opt-${currentCard.id}-correct-2-${candidateCard.id}`,
+                label: candidateValue,
+                value: candidateValue,
+                isCorrect: true,
+            };
+            options.push(correctOpt2);
+            correctOptionIds.push(correctOpt2.optionId);
+            foundSecondCorrect = true;
+        }
+    }
+
+    // If we couldn't find a second correct, we still proceed with 1 correct
+    // (This should be rare and handled by availability check)
+
+    // Fill wrong options
+    for (let i = 0; i < cards.length && options.length < targetTotal; i++) {
+        if (i === currentIndex) continue;
+
+        const candidateCard = cards[i];
+        const candidateValue = candidateCard.definition?.trim() || '(Không có nội dung)';
+        const normalized = normalizeLabel(candidateValue);
+
+        if (!usedNormalized.has(normalized)) {
+            usedNormalized.add(normalized);
+            options.push({
+                optionId: `opt-${currentCard.id}-wrong-${candidateCard.id}`,
+                label: candidateValue,
+                value: candidateValue,
+                isCorrect: false,
+            });
+        }
+    }
+
+    // Shuffle options (deterministic)
+    const seed = `${setId}-${currentCard.id}-${currentIndex}-multiselect`;
+    const shuffled = shuffleWithSeed(options, seed);
+
+    return {
+        options: shuffled,
+        correctOptionIds,
+    };
+}
+
+/**
+ * Check if Multi-select is available for a set
+ * MS-SET-001: Requires at least 2 unique correct answers
+ */
+export function isMultiSelectAvailable(cards: CardDTO[]): boolean {
+    if (cards.length < 2) {
+        return false;
+    }
+
+    // Check if we have at least 2 unique definitions
+    const uniqueDefinitions = new Set<string>();
+    for (const card of cards) {
+        const def = card.definition?.trim() || '';
+        if (def) {
+            uniqueDefinitions.add(normalizeLabel(def));
+        }
+    }
+
+    return uniqueDefinitions.size >= 2;
+}
+
+/**
+ * Normalize written answer for matching
+ * BR-WR-001: trim, collapse whitespace, toLowerCase, preserve diacritics
+ */
+export function normalizeWrittenAnswer(text: string): string {
+    return text
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
 }
 
 

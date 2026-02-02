@@ -11,7 +11,7 @@ import { buildLearnSessionFromCards } from './learnSessionBuilder';
 
 const STORAGE_KEY_PREFIX = 'quizlet_learn_session_';
 // Bump version when schema changes so we can safely reset incompatible data.
-const CURRENT_VERSION = 'v2';
+const CURRENT_VERSION = 'v3';
 
 export type LearnStatus = 'unseen' | 'correct' | 'incorrect' | 'skipped';
 
@@ -26,6 +26,10 @@ export interface LearnPersistenceState {
     maxProgressPercent: number;
     createdAt: string;
     updatedAt: string;
+    // v3: Question type engine state
+    currentQuestionType?: 'MCQ' | 'MULTI_SELECT' | 'WRITTEN';
+    typeRotationOrder?: ('MCQ' | 'MULTI_SELECT' | 'WRITTEN')[];
+    lastTypeUsed?: 'MCQ' | 'MULTI_SELECT' | 'WRITTEN' | null;
 }
 
 function getStorageKey(setId: string): string {
@@ -82,6 +86,11 @@ export function loadLearnSession(
         // Basic sanity: items length should match current cards length
         if (!Array.isArray(parsed.items) || parsed.items.length !== cards.length) {
             return null;
+        }
+
+        // v3: Migrate v2 data (add default question type if missing)
+        if (!parsed.currentQuestionType && parsed.currentIndex < parsed.poolItemIds.length) {
+            parsed.currentQuestionType = 'MCQ'; // Default for v2 sessions
         }
 
         // poolItemIds must be a subset of itemIds

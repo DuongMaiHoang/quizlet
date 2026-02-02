@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { HanziBoostSettings } from '@/ui/components/settings/HanziBoostSettings';
 
 export function Header() {
     return (
@@ -11,6 +14,7 @@ export function Header() {
                 </Link>
 
                 <nav className="flex items-center gap-4">
+                    <HanziBoostSettings />
                     <Link
                         href="/sets/new"
                         className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"

@@ -9,6 +9,8 @@ import { container } from '@/lib/di';
 import { LoadingState } from '@/ui/components/common/LoadingState';
 import { ErrorState } from '@/ui/components/common/ErrorState';
 import { ChevronLeft, Check, X } from 'lucide-react';
+import { SmartText } from '@/ui/components/common/SmartText';
+import { PinyinInput } from '@/ui/components/sets/PinyinInput';
 
 interface Answer {
     questionId: string;
@@ -181,18 +183,22 @@ export default function TestPage() {
                                         <X className="h-5 w-5 text-error" />
                                     )}
                                 </div>
-                                <div className="mb-2 font-semibold text-foreground">{question.question}</div>
+                                <div className="mb-2 font-semibold text-foreground">
+                                    <SmartText text={question.question} />
+                                </div>
                                 <div className="space-y-1 text-sm">
                                     <div>
                                         <span className="text-muted">Your answer: </span>
                                         <span className={answer.isCorrect ? 'text-success' : 'text-error'}>
-                                            {answer.userAnswer}
+                                            <SmartText text={answer.userAnswer} />
                                         </span>
                                     </div>
                                     {!answer.isCorrect && (
                                         <div>
                                             <span className="text-muted">Correct answer: </span>
-                                            <span className="text-success">{question.correctAnswer}</span>
+                                            <span className="text-success">
+                                                <SmartText text={question.correctAnswer} />
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -267,7 +273,7 @@ export default function TestPage() {
                     {currentQuestion.type === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : 'Written Answer'}
                 </div>
                 <div className="mb-8 text-2xl font-bold text-foreground">
-                    {currentQuestion.question}
+                    <SmartText text={currentQuestion.question} />
                 </div>
 
                 {currentQuestion.type === 'MULTIPLE_CHOICE' ? (
@@ -292,17 +298,24 @@ export default function TestPage() {
                                             <div className="h-2 w-2 rounded-full bg-white" />
                                         )}
                                     </div>
-                                    <span className="text-foreground">{choice}</span>
+                                    <span className="text-foreground">
+                                        <SmartText text={choice} />
+                                    </span>
                                 </div>
                             </button>
                         ))}
                     </div>
                 ) : (
                     <div>
-                        <label htmlFor="answer" className="mb-2 block text-sm font-medium text-foreground">
-                            Your answer
-                        </label>
-                        <input
+                        <div className="mb-2 flex items-center justify-between">
+                            <label htmlFor="answer" className="block text-sm font-medium text-foreground">
+                                Your answer
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                                Alt+P để bật/tắt Pinyin
+                            </span>
+                        </div>
+                        <PinyinInput
                             id="answer"
                             type="text"
                             value={userAnswer}
@@ -310,6 +323,10 @@ export default function TestPage() {
                             placeholder="Type your answer..."
                             className="w-full rounded-lg border border-border bg-background px-4 py-3 text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                             autoFocus
+                            onShowToast={(msg) => {
+                                // Show toast notification (could add toast state if needed)
+                                console.log('Pinyin toast:', msg);
+                            }}
                         />
                     </div>
                 )}

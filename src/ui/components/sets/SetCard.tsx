@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { SetDTO } from '@/application/dto/SetDTO';
 import { BookOpen, Edit2, Trash2 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
+import { SmartText } from '@/ui/components/common/SmartText';
 
 interface SetCardProps {
     set: SetDTO;
@@ -52,12 +53,12 @@ export function SetCard({ set, onDelete }: SetCardProps) {
             <div className="mb-5 space-y-3">
                 <Link href={`/sets/${set.id}`} className="block">
                     <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2">
-                        {set.title}
+                        <SmartText text={set.title} />
                     </h3>
                 </Link>
                 {set.description && (
                     <p className="text-sm leading-relaxed text-muted/80 line-clamp-2">
-                        {set.description}
+                        <SmartText text={set.description} />
                     </p>
                 )}
             </div>
