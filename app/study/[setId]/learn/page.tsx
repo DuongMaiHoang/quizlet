@@ -305,14 +305,28 @@ export default function LearnCanonicalPage() {
             if (!option) return;
 
             const isCorrect = option.isCorrect;
-            const outcome: LearnOutcome = isCorrect ? 'correct' : 'incorrect';
+            const outcome: LearnStatus = isCorrect ? 'correct' : 'incorrect';
 
             setSelectedOptionId(optionId);
             setFeedback({ status: isCorrect ? 'correct' : 'incorrect' });
 
-            setOutcomes((prev) => {
+            setStatusByItemId((prev) => {
                 const next = { ...prev, [currentItem.itemId]: outcome };
-                saveLearnSession(setId, items, next, currentIndex);
+                saveLearnSession({
+                    version: 'v3',
+                    setId,
+                    items,
+                    statusByItemId: next,
+                    currentIndex,
+                    attempt,
+                    poolItemIds,
+                    maxProgressPercent,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    currentQuestionType,
+                    typeRotationOrder,
+                    lastTypeUsed,
+                });
                 return next;
             });
         };
@@ -858,7 +872,7 @@ export default function LearnCanonicalPage() {
                     <div className="mt-4">
                         <Link
                             href="/"
-                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                         >
                             Quay lại
                         </Link>
@@ -881,7 +895,7 @@ export default function LearnCanonicalPage() {
                     <div className="mt-4">
                         <Link
                             href={`/sets/${set.id}/edit`}
-                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                         >
                             Thêm thẻ
                         </Link>
@@ -903,7 +917,7 @@ export default function LearnCanonicalPage() {
                         type="button"
                         onClick={handleRetryBuild}
                         disabled={isBuilding}
-                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         Thử lại
                     </button>
@@ -969,7 +983,7 @@ export default function LearnCanonicalPage() {
                                             attempt: nextAttempt,
                                         });
                                     }}
-                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                                 >
                                     {`Học lại các câu sai (${incorrectOrSkippedCount})`}
                                 </button>
@@ -994,7 +1008,7 @@ export default function LearnCanonicalPage() {
                                     type="button"
                                     data-testid="learn-restart-from-scratch"
                                     onClick={handleRestartFromScratch}
-                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                                 >
                                     Học lại từ đầu
                                 </button>
@@ -1301,7 +1315,7 @@ export default function LearnCanonicalPage() {
                                         handleWrittenCheck();
                                     }
                                 }}
-                                className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 Kiểm tra
                             </button>
@@ -1314,7 +1328,7 @@ export default function LearnCanonicalPage() {
                             data-testid="learn-continue"
                             ref={continueButtonRef}
                             onClick={handleContinue}
-                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                         >
                             Tiếp tục
                         </button>

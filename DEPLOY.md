@@ -59,14 +59,42 @@ Next.js static export có một số hạn chế:
 2. **Routing Issues**: Đảm bảo tất cả links dùng `Link` component từ Next.js
 3. **Build Failures**: Kiểm tra logs trong GitHub Actions
 
-## Alternative: Deploy lên Vercel (Recommended)
+## ⚠️ Lưu ý quan trọng về Dynamic Routes
 
-Nếu app cần SSR hoặc API routes, nên dùng Vercel:
+App này sử dụng dynamic routes (`[id]`, `[setId]`) với "use client" components. Next.js static export **KHÔNG hỗ trợ** dynamic routes với client components trừ khi có `generateStaticParams()`.
 
+Vì app sử dụng localStorage và client-side routing, **GitHub Pages static export sẽ KHÔNG hoạt động** với dynamic routes.
+
+## ✅ Giải pháp: Deploy lên Vercel (Recommended)
+
+**Vercel là lựa chọn tốt nhất** vì:
+- Hỗ trợ Next.js đầy đủ (SSR, ISR, dynamic routes)
+- Miễn phí cho personal projects
+- Tự động deploy từ GitHub
+- Performance tốt hơn
+
+### Cách deploy lên Vercel:
+
+1. **Cài đặt Vercel CLI:**
 ```bash
 npm i -g vercel
+```
+
+2. **Deploy:**
+```bash
 vercel
 ```
 
-Vercel hỗ trợ Next.js đầy đủ và miễn phí cho personal projects.
+3. **Hoặc kết nối GitHub repository:**
+   - Vào https://vercel.com
+   - Import GitHub repository
+   - Vercel sẽ tự động detect Next.js và deploy
+
+### Cấu hình Vercel:
+- Framework: Next.js (auto-detected)
+- Build Command: `npm run build`
+- Output Directory: `.next` (auto)
+- Install Command: `npm ci`
+
+Vercel sẽ tự động xử lý dynamic routes và client components.
 

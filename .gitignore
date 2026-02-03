@@ -15,7 +15,7 @@
 
 # next.js
 /.next/
-# /out/  # Commented out - needed for GitHub Pages deployment
+/out/
 
 # production
 /build
@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /.cursor
+
+.vercel
+.env*.local

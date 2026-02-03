@@ -352,7 +352,7 @@ export function LearnSettingsOverlay({
                         type="button"
                         onClick={handleApply}
                         data-testid="learn-settings-apply"
-                        className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                        className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
                         Áp dụng
                     </button>

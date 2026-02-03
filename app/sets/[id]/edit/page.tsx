@@ -90,7 +90,7 @@ export default function EditSetPage() {
                 action={
                     <Link
                         href="/"
-                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors"
                     >
                         Go Home
                     </Link>

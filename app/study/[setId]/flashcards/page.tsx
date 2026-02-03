@@ -204,7 +204,7 @@ export default function FlashcardsPage() {
                 action={
                     <Link
                         href={`/sets/${setId}`}
-                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors"
                     >
                         Back to Set
                     </Link>
@@ -324,7 +324,7 @@ export default function FlashcardsPage() {
                     data-testid="flashcard-next"
                     onClick={next}
                     disabled={cardOrder.length === 0 || progress.index >= cardOrder.length - 1}
-                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Next card"
                 >
                     Next

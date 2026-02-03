@@ -404,7 +404,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                             <button
                                 onClick={handleImportClick}
                                 disabled={!canImport || hasCustomError}
-                                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 {canImport ? `Nhập ${parsed.stats.valid} thẻ` : 'Nhập thẻ'}
                             </button>
@@ -434,7 +434,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                             </button>
                             <button
                                 onClick={handleConfirmImport}
-                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 Nhập
                             </button>

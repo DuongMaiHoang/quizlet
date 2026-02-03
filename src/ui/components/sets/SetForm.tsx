@@ -189,7 +189,7 @@ export function SetForm({
                             <button
                                 type="button"
                                 onClick={handleAddCard}
-                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Card
@@ -204,7 +204,7 @@ export function SetForm({
                             <button
                                 type="button"
                                 onClick={() => setShowImport(true)}
-                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                             >
                                 <Import className="mr-2 h-4 w-4" />
                                 Dán nội dung để tạo thẻ
@@ -281,7 +281,7 @@ export function SetForm({
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {submitting ? 'Saving...' : submitLabel}
                     </button>

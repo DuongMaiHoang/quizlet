@@ -115,7 +115,7 @@ export default function TestPage() {
                 action={
                     <Link
                         href={`/sets/${setId}`}
-                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors"
                     >
                         Back to Set
                     </Link>
@@ -223,7 +223,7 @@ export default function TestPage() {
                             setIsComplete(false);
                             loadSetAndGenerateTest();
                         }}
-                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors"
                     >
                         Retake Test
                     </button>
@@ -311,8 +311,8 @@ export default function TestPage() {
                     <div>
                         <div className="mb-2 flex items-center justify-between">
                             <label htmlFor="answer" className="block text-sm font-medium text-foreground">
-                                Your answer
-                            </label>
+                            Your answer
+                        </label>
                             <span className="text-xs text-muted-foreground">
                                 Alt+P để bật/tắt Pinyin
                             </span>
@@ -337,7 +337,7 @@ export default function TestPage() {
                     <button
                         onClick={handleNext}
                         disabled={!canSubmit}
-                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Test'}
                     </button>
