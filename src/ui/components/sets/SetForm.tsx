@@ -133,7 +133,7 @@ export function SetForm({
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form id="set-form" onSubmit={handleSubmit} className="space-y-6 pb-20">
                 {/* Error Message */}
                 {error && (
                     <div className="rounded-lg border border-error bg-error/10 p-4 text-sm text-error">
@@ -268,25 +268,26 @@ export function SetForm({
                         </div>
                     ))}
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end space-x-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="rounded-lg border border-border px-6 py-2 text-sm font-medium text-foreground hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                        {submitting ? 'Saving...' : submitLabel}
-                    </button>
-                </div>
             </form>
+
+            {/* Sticky Actions (compact, floating) */}
+            <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="rounded-lg border border-border bg-card/90 px-4 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur hover:bg-card-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    form="set-form"
+                    disabled={submitting}
+                    className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-foreground shadow-lg hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                    {submitting ? 'Saving...' : submitLabel}
+                </button>
+            </div>
 
             {/* Import Overlay */}
             {
@@ -302,7 +303,7 @@ export function SetForm({
             {/* Toast Notification */}
             {
                 toast && (
-                    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-background shadow-lg animate-in slide-in-from-bottom-5">
+                    <div className="fixed bottom-16 right-4 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-background shadow-lg animate-in slide-in-from-bottom-5">
                         <CheckCircle2 className="h-5 w-5 text-success" />
                         <span className="font-medium">{toast.msg}</span>
                     </div>

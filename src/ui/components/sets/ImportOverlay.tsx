@@ -27,6 +27,19 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
     const [customQaSeparator, setCustomQaSeparator] = useState('');
     const [customCardSeparator, setCustomCardSeparator] = useState('\\n');
 
+    // Prompt generator (for ChatGPT)
+    const [promptExtra, setPromptExtra] = useState('');
+    const [generatedPrompt, setGeneratedPrompt] = useState('');
+    const [copied, setCopied] = useState(false);
+
+    // Popup scale (zoom out to see more content)
+    const SCALE_STORAGE_KEY = 'ui:importOverlayScale';
+    const DEFAULT_SCALE = 0.85; // effective scale will be smaller due to global html zoom
+    const MIN_SCALE = 0.7;
+    const MAX_SCALE = 1.0;
+    const SCALE_STEP = 0.05;
+    const [overlayScale, setOverlayScale] = useState<number>(DEFAULT_SCALE);
+
     // Derived State
     const [parsed, setParsed] = useState<ParseResult>({ rows: [], stats: { total: 0, valid: 0, invalid: 0 } });
     const [isParsing, setIsParsing] = useState(false);
@@ -53,6 +66,22 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
             }
         }
     }, [setId]);
+
+    // Load popup scale
+    useEffect(() => {
+        const saved = localStorage.getItem(SCALE_STORAGE_KEY);
+        if (!saved) return;
+        const parsed = parseFloat(saved);
+        if (!Number.isFinite(parsed)) return;
+        const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, parsed));
+        setOverlayScale(clamped);
+    }, []);
+
+    const updateOverlayScale = (next: number) => {
+        const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, next));
+        setOverlayScale(clamped);
+        localStorage.setItem(SCALE_STORAGE_KEY, String(clamped));
+    };
 
     // Autosave draft
     useEffect(() => {
@@ -90,6 +119,103 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
         }
         // For tab and :: modes, always use newline
         return '\n';
+    };
+
+    const getModeLabel = () => {
+        switch (parseMode) {
+            case 'tab': return 'Tab';
+            case 'doublecolon': return 'Dấu ::';
+            case 'custom': return 'Tùy chỉnh';
+            default: return 'Tab';
+        }
+    };
+
+    const escapeForDisplay = (value: string) => {
+        // Make separators visible inside a prompt (so users understand exact chars)
+        return value
+            .replace(/\t/g, '\\t')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r');
+    };
+
+    const buildGptPrompt = () => {
+        const qaSep = getQaSeparator();
+        const cardSep = getCardSeparator();
+        const qaSepShown = escapeForDisplay(qaSep);
+        const cardSepShown = escapeForDisplay(cardSep);
+        const extra = promptExtra.trim();
+
+        return [
+            'Bạn là trợ lý tạo dữ liệu flashcard.',
+            '',
+            `Mục tiêu: tạo danh sách Câu hỏi/Thuật ngữ và Trả lời/Định nghĩa để mình dán vào Quizlet Clone (popup "Nhập nhanh hàng loạt").`,
+            '',
+            `KIỂU TÁCH ĐANG CHỌN: ${getModeLabel()}`,
+            `- Ký tự tách Câu hỏi - Trả lời (QA separator): ${qaSepShown}`,
+            `- Ký tự tách giữa các thẻ (Card separator): ${cardSepShown}`,
+            '',
+            'YÊU CẦU ĐỊNH DẠNG OUTPUT (BẮT BUỘC):',
+            `- Mỗi thẻ là 1 dòng (hoặc 1 "record")`,
+            `- Trong mỗi thẻ, nối Câu hỏi và Trả lời bằng đúng QA separator: ${qaSepShown}`,
+            `- Giữa các thẻ, dùng đúng Card separator: ${cardSepShown}`,
+            '- KHÔNG in tiêu đề, KHÔNG đánh số thứ tự, KHÔNG bullet, KHÔNG markdown code block.',
+            '- Chỉ xuất đúng nội dung thẻ theo format, không giải thích.',
+            '',
+            'QUY TẮC AN TOÀN FORMAT:',
+            `- Tuyệt đối không dùng lại chuỗi "${qaSepShown}" bên trong nội dung câu hỏi/trả lời (nếu cần, hãy diễn đạt lại để tránh ký tự tách).`,
+            '- Tránh xuống dòng trong nội dung của 1 thẻ (giữ 1 record = 1 thẻ).',
+            '',
+            'VÍ DỤ OUTPUT (minh hoạ):',
+            `Câu hỏi 1${qaSep}Trả lời 1`,
+            `${cardSep}Câu hỏi 2${qaSep}Trả lời 2`,
+            '',
+            'ĐỀ BÀI / YÊU CẦU NỘI DUNG (người dùng sẽ nhập bên dưới):',
+            extra ? extra : '(Hãy chờ mình nhập yêu cầu ở đây. Khi có, hãy tạo khoảng 20-50 thẻ theo đúng format ở trên.)',
+        ].join('\n');
+    };
+
+    const handleGeneratePrompt = () => {
+        // Prevent generating nonsense prompt for missing custom QA separator
+        if (parseMode === 'custom' && !customQaSeparator.trim()) {
+            setGeneratedPrompt('Vui lòng nhập "Ký tự tách Câu hỏi - Trả lời" trước khi generate prompt.');
+            return;
+        }
+        setGeneratedPrompt(buildGptPrompt());
+    };
+
+    const handleCopyPrompt = async () => {
+        const text = generatedPrompt.trim();
+        if (!text) return;
+
+        const setCopiedWithTimeout = () => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        };
+
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedWithTimeout();
+            return;
+        } catch {
+            // Fallback for environments where Clipboard API is blocked
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.top = '-9999px';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (ok) {
+                    setCopiedWithTimeout();
+                }
+            } catch {
+                // ignore
+            }
+        }
     };
 
     // Debounced Parsing Effect
@@ -184,18 +310,59 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-card border border-border shadow-2xl">
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 backdrop-blur-sm"
+            >
+                <div
+                    className="flex h-[100vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-card border border-border shadow-2xl"
+                    style={{ zoom: overlayScale }}
+                >
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-border p-4 bg-card">
                         <h2 className="text-xl font-bold text-foreground">Nhập nhanh hàng loạt</h2>
-                        <button
-                            onClick={onClose}
-                            className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                            aria-label="Close import overlay"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-background/60 px-2 py-1">
+                                <span className="text-[11px] font-medium text-muted-foreground">Scale</span>
+                                <button
+                                    onClick={() => updateOverlayScale(overlayScale - SCALE_STEP)}
+                                    disabled={overlayScale <= MIN_SCALE + 1e-6}
+                                    className="rounded-md px-2 py-1 text-xs font-medium text-foreground hover:bg-card-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                                    aria-label="Zoom out popup"
+                                    type="button"
+                                >
+                                    -
+                                </button>
+                                <span className="min-w-[3.25rem] text-center text-[11px] font-semibold text-foreground tabular-nums">
+                                    {Math.round(overlayScale * 100)}%
+                                </span>
+                                <button
+                                    onClick={() => updateOverlayScale(overlayScale + SCALE_STEP)}
+                                    disabled={overlayScale >= MAX_SCALE - 1e-6}
+                                    className="rounded-md px-2 py-1 text-xs font-medium text-foreground hover:bg-card-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                                    aria-label="Zoom in popup"
+                                    type="button"
+                                >
+                                    +
+                                </button>
+                                <button
+                                    onClick={() => updateOverlayScale(DEFAULT_SCALE)}
+                                    className="rounded-md px-2 py-1 text-[11px] font-medium text-foreground hover:bg-card-hover"
+                                    aria-label="Reset popup scale"
+                                    type="button"
+                                >
+                                    Reset
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={onClose}
+                                className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-foreground transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                aria-label="Close import overlay"
+                                type="button"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Draft restored banner */}
@@ -208,8 +375,65 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
 
                     {/* Content Grid */}
                     <div className="flex flex-1 overflow-hidden">
+                        {/* Prompt Panel (Small, Left) */}
+                        <div className="flex w-[22rem] flex-col gap-4 border-r border-border bg-card/40 p-4 overflow-y-auto">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="text-sm font-semibold text-foreground truncate">Prompt cho ChatGPT</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Tự bám theo kiểu tách bạn đang chọn
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleGeneratePrompt}
+                                    className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-foreground hover:bg-primary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                >
+                                    Generate
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-xs font-medium text-muted">
+                                    Yêu cầu thêm (tuỳ chọn)
+                                </label>
+                                <textarea
+                                    value={promptExtra}
+                                    onChange={(e) => setPromptExtra(e.target.value)}
+                                    placeholder="Ví dụ: Chủ đề HSK4, mỗi thẻ gồm: từ Hán tự, pinyin, nghĩa tiếng Việt; kèm 1 câu ví dụ ngắn..."
+                                    className="h-24 w-full resize-none rounded-lg border border-border bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+                                />
+                                <div className="text-[11px] text-muted-foreground">
+                                    Gợi ý: nêu số lượng thẻ, level, ngôn ngữ, và ràng buộc tránh dùng ký tự tách.
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-medium text-muted">
+                                        Prompt (copy dán vào ChatGPT)
+                                    </label>
+                                    <button
+                                        onClick={handleCopyPrompt}
+                                        disabled={!generatedPrompt.trim()}
+                                        className={`rounded-lg border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${copied
+                                                ? 'border-success/40 bg-success/10 text-success'
+                                                : 'border-border text-foreground hover:bg-card-hover'
+                                            }`}
+                                    >
+                                        {copied ? 'Đã copy' : 'Copy'}
+                                    </button>
+                                </div>
+                                <textarea
+                                    value={generatedPrompt}
+                                    readOnly
+                                    placeholder="Bấm Generate để tạo prompt…"
+                                    className="h-64 w-full resize-none rounded-lg border border-border bg-background p-3 font-mono text-xs text-foreground focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
                         {/* Left Panel: Input & Settings */}
-                        <div className="flex w-1/2 flex-col gap-6 border-r border-border p-6 overflow-y-auto">
+                        <div className="flex flex-1 flex-col gap-4 border-r border-border p-4 overflow-y-auto">
 
                             {/* Zone A: Paste Area */}
                             <div className="flex flex-col gap-2">
@@ -222,7 +446,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                                     onChange={(e) => setRawText(e.target.value)}
                                     onKeyDown={handleTextareaKeyDown}
                                     placeholder={"Ví dụ:\nTừ 1\tNghĩa 1\nTừ 2\tNghĩa 2\n\nHoặc:\nCâu hỏi 1 :: Trả lời 1\nCâu hỏi 2 :: Trả lời 2"}
-                                    className="h-64 w-full rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none"
+                                    className="h-56 w-full rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none"
                                     aria-label="Paste content for bulk import"
                                     onShowToast={(msg) => {
                                         // Show toast in ImportOverlay (could add toast state if needed)
@@ -306,7 +530,7 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
                         </div>
 
                         {/* Right Panel: Preview (Zone C) */}
-                        <div className="flex w-1/2 flex-col bg-background/50">
+                        <div className="flex flex-1 flex-col bg-background/50">
                             <div className="flex items-center justify-between border-b border-border p-4 bg-card/50">
                                 <h3 className="font-semibold text-foreground">Xem trước</h3>
                                 <div className="flex gap-4 text-xs font-medium">
@@ -415,8 +639,13 @@ export function ImportOverlay({ onImport, onClose, setId }: ImportOverlayProps) 
 
             {/* Confirm Modal */}
             {showConfirmModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+                >
+                    <div
+                        className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl"
+                        style={{ zoom: overlayScale }}
+                    >
                         <h3 className="text-lg font-semibold text-foreground mb-2">
                             Xác nhận nhập thẻ
                         </h3>
