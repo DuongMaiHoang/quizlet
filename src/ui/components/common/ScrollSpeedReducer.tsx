@@ -12,6 +12,24 @@ export function ScrollSpeedReducer() {
     useEffect(() => {
         let isScrolling = false;
 
+        const SCROLL_MULTIPLIER = 0.88;
+
+        const isScrollable = (el: HTMLElement) => {
+            const style = window.getComputedStyle(el);
+            const overflowY = style.overflowY;
+            const canScrollY = overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+            return canScrollY && el.scrollHeight > el.clientHeight;
+        };
+
+        const findScrollableAncestor = (start: EventTarget | null): HTMLElement | null => {
+            let el = start instanceof HTMLElement ? start : null;
+            while (el) {
+                if (isScrollable(el)) return el;
+                el = el.parentElement;
+            }
+            return null;
+        };
+
         const handleWheel = (e: WheelEvent) => {
             // Prevent multiple rapid scrolls
             if (isScrolling) {
@@ -24,16 +42,22 @@ export function ScrollSpeedReducer() {
                 isScrolling = true;
                 
                 // Reduce scroll speed to 88%
-                const reducedDelta = e.deltaY * 0.88;
-                
-                // Apply reduced scroll smoothly
-                window.scrollBy({
-                    top: reducedDelta,
-                    behavior: 'auto'
-                });
-                
-                // Prevent default scroll to use our custom scroll
-                e.preventDefault();
+                const reducedDelta = e.deltaY * SCROLL_MULTIPLIER;
+
+                // If the wheel event happens inside a scrollable overlay/container,
+                // scroll that container instead of scrolling the main window.
+                const scrollContainer = findScrollableAncestor(e.target);
+                if (scrollContainer) {
+                    scrollContainer.scrollTop += reducedDelta;
+                    e.preventDefault();
+                } else {
+                    // Fallback: scroll the main window
+                    window.scrollBy({
+                        top: reducedDelta,
+                        behavior: 'auto',
+                    });
+                    e.preventDefault();
+                }
                 
                 // Reset flag after a short delay
                 setTimeout(() => {
